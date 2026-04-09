@@ -21,6 +21,10 @@ const server = http.createServer((req, res) => {
   }
 });
 
+server.on('error', (e) => {
+  console.error('Script server error:', e);
+});
+
 server.listen(5500, '127.0.0.1', () => {
   console.log('Script server running at http://127.0.0.1:5500/');
 });

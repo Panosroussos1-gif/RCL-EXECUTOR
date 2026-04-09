@@ -240,33 +240,52 @@ ipcMain.handle('inject-standalone', async () => {
   const loaderScript = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
   clipboard.writeText(loaderScript);
 
-  // AppleScript to focus Roblox and paste/run the loader
+  // Robust AppleScript to find Roblox or RobloxPlayer
   const appleScript = `
+    set robloxNames to {"Roblox", "RobloxPlayer", "RobloxPlayerBeta"}
+    set foundProcess to ""
+    
     tell application "System Events"
-      if exists (process "Roblox") then
-        set frontmost of process "Roblox" to true
+      repeat with rName in robloxNames
+        if exists (process rName) then
+          set foundProcess to rName
+          exit repeat
+        end if
+      end repeat
+      
+      if foundProcess is not "" then
+        set frontmost of process foundProcess to true
         delay 0.5
-        -- Open Chat/Command Bar
+        -- Open Chat
         keystroke "/"
-        delay 0.3
-        -- Paste the loader
+        delay 0.5
+        -- Paste Loader
         command down
         keystroke "v"
         key up command
-        delay 0.3
+        delay 0.5
         -- Execute
-        key code 36 -- Enter key
-        return true
+        key code 36
+        return "SUCCESS:" & foundProcess
       else
-        return false
+        return "ERROR:Roblox process not found"
       end if
     end tell
   `;
 
   return new Promise((resolve) => {
-    exec(`osascript -e '${appleScript}'`, (err, stdout) => {
-      if (err) return resolve({ success: false, error: err.message });
-      resolve({ success: stdout.trim() === 'true' });
+    // Set a 15-second limit for the osascript command itself
+    const osascript = exec(`osascript -e '${appleScript}'`, { timeout: 15000 }, (err, stdout, stderr) => {
+      if (err) {
+        console.error('AppleScript Error:', err);
+        return resolve({ success: false, error: err.message });
+      }
+      const result = stdout.trim();
+      if (result.startsWith('SUCCESS:')) {
+        resolve({ success: true, process: result.split(':')[1] });
+      } else {
+        resolve({ success: false, error: result.split(':')[1] || 'Unknown error' });
+      }
     });
   });
 });

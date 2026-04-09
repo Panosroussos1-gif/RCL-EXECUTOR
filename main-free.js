@@ -118,28 +118,43 @@ ipcMain.handle('inject-standalone', async () => {
   clipboard.writeText(loaderScript);
 
   const appleScript = `
+    set robloxNames to {"Roblox", "RobloxPlayer", "RobloxPlayerBeta"}
+    set foundProcess to ""
+    
     tell application "System Events"
-      if exists (process "Roblox") then
-        set frontmost of process "Roblox" to true
+      repeat with rName in robloxNames
+        if exists (process rName) then
+          set foundProcess to rName
+          exit repeat
+        end if
+      end repeat
+      
+      if foundProcess is not "" then
+        set frontmost of process foundProcess to true
         delay 0.5
         keystroke "/"
-        delay 0.3
+        delay 0.5
         command down
         keystroke "v"
         key up command
-        delay 0.3
+        delay 0.5
         key code 36
-        return true
+        return "SUCCESS:" & foundProcess
       else
-        return false
+        return "ERROR:Roblox not found"
       end if
     end tell
   `;
 
   return new Promise((resolve) => {
-    exec(`osascript -e '${appleScript}'`, (err, stdout) => {
+    exec(`osascript -e '${appleScript}'`, { timeout: 15000 }, (err, stdout) => {
       if (err) return resolve({ success: false, error: err.message });
-      resolve({ success: stdout.trim() === 'true' });
+      const result = stdout.trim();
+      if (result.startsWith('SUCCESS:')) {
+        resolve({ success: true, process: result.split(':')[1] });
+      } else {
+        resolve({ success: false, error: result.split(':')[1] || 'Unknown error' });
+      }
     });
   });
 });

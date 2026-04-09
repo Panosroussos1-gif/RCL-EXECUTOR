@@ -217,9 +217,11 @@
             clearTimeout(injectionTimeout);
 
             if (!res.success) {
-                alert('Roblox not found!');
+                alert('Error: ' + res.error);
                 injectBtn.disabled = false;
                 injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+            } else {
+                console.log('Successfully sent to: ' + res.process);
             }
         };
 

@@ -1044,10 +1044,10 @@ initialize()</textarea>
             clearTimeout(injectionTimeout);
             
             if (res.success) {
-                addLog('SUCCESS', 'Injection script sent to Roblox!', '#00ff88');
-                addLog('SYSTEM', 'Waiting for heartbeat...', '#00ccff');
+                addLog('SUCCESS', `Found process: ${res.process}. Script sent!`, '#00ff88');
+                addLog('SYSTEM', 'Waiting for connection...', '#00ccff');
             } else {
-                addLog('ERROR', 'Roblox not found! Make sure the game is open.', '#ff4d4d');
+                addLog('ERROR', `Injection failed: ${res.error}`, '#ff4d4d');
                 injectBtn.disabled = false;
                 injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
             }

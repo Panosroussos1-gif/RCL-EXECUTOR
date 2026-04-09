@@ -9,12 +9,13 @@
 extern char **environ;
 
 int main(int argc, char *argv[]) {
-    // Path to the Roblox executable
-    const char* original_roblox = "/Applications/Roblox.app/Contents/MacOS/RobloxPlayer";
+    // Path to the Roblox application
+    const char* original_app = "/Applications/Roblox.app";
     
     // Create a temporary path for our "Safe" Roblox
     std::string temp_dir = "/tmp/rcl_temp";
-    std::string safe_roblox = temp_dir + "/RobloxPlayer";
+    std::string safe_app = temp_dir + "/Roblox.app";
+    std::string safe_binary = safe_app + "/Contents/MacOS/RobloxPlayer";
     
     // Path to our compiled dylib (Must be absolute)
     char current_path[1024];
@@ -31,14 +32,16 @@ int main(int argc, char *argv[]) {
     // 1. Create temp directory
     mkdir(temp_dir.c_str(), 0777);
     
-    // 2. Copy Roblox to temp
-    std::cout << "[STEP 1] Copying Roblox to safe zone..." << std::endl;
-    std::string copy_cmd = "cp \"" + std::string(original_roblox) + "\" \"" + safe_roblox + "\"";
-    system(copy_cmd.c_str());
+    // 2. Copy the ENTIRE Roblox.app bundle to safe zone (MacSploit Method)
+    if (access(safe_app.c_str(), F_OK) == -1) {
+        std::cout << "[STEP 1] Copying Roblox App bundle to safe zone..." << std::endl;
+        std::string copy_cmd = "cp -R \"" + std::string(original_app) + "\" \"" + safe_app + "\"";
+        system(copy_cmd.c_str());
+    }
     
     // 3. Strip Code Signature (Bypasses Library Validation)
     std::cout << "[STEP 2] Stripping signatures (Bypassing SIP)..." << std::endl;
-    std::string strip_cmd = "codesign --remove-signature \"" + safe_roblox + "\" 2>/dev/null";
+    std::string strip_cmd = "codesign --remove-signature \"" + safe_binary + "\" 2>/dev/null";
     system(strip_cmd.c_str());
     
     // 4. Set Environment
@@ -51,13 +54,13 @@ int main(int argc, char *argv[]) {
     }
     new_env.push_back(nullptr);
     
-    // 5. Launch
+    // 5. Launch the Safe App
     std::cout << "[STEP 3] Launching Safe Roblox..." << std::endl;
     pid_t pid;
-    char* safe_roblox_cstr = (char*)safe_roblox.c_str();
-    char* const args[] = {safe_roblox_cstr, nullptr};
+    char* safe_binary_cstr = (char*)safe_binary.c_str();
+    char* const args[] = {safe_binary_cstr, nullptr};
     
-    int status = posix_spawn(&pid, safe_roblox.c_str(), nullptr, nullptr, args, new_env.data());
+    int status = posix_spawn(&pid, safe_binary.c_str(), nullptr, nullptr, args, new_env.data());
     
     if (status == 0) {
         std::cout << "[SUCCESS] Internal Injection Active! (PID: " << pid << ")" << std::endl;

@@ -7,6 +7,7 @@
     "start": "electron .",
     "start:free": "electron main-free.js",
     "build": "electron-builder",
+    "build:pro": "electron-builder",
     "build:free": "electron-builder -c.main=main-free.js -c.productName=\"RCL Free\" -c.appId=\"com.rcl.executor.free\""
   },
   "build": {
@@ -19,9 +20,7 @@
         "zip"
       ],
       "hardenedRuntime": false,
-      "gatekeeperAssess": false,
-      "entitlements": null,
-      "entitlementsInherit": null
+      "gatekeeperAssess": false
     },
     "win": {
       "target": "nsis",

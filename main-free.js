@@ -95,6 +95,14 @@ ipcMain.handle('execute-script', (event, content) => {
   return true;
 });
 
+ipcMain.handle('get-loader', () => {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
+  } catch (err) {
+    return null;
+  }
+});
+
 ipcMain.handle('save-file', async (event, { name, content }) => {
   const filePath = path.join(app.getPath('userData'), 'workspace', `${name}.lua`);
   try {

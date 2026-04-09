@@ -218,6 +218,15 @@ ipcMain.handle('execute-script', (event, content) => {
   return true;
 });
 
+// --- NEW: GET LOADER ---
+ipcMain.handle('get-loader', () => {
+  try {
+    return fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
+  } catch (err) {
+    return null;
+  }
+});
+
 // --- REAL FUNCTIONALITY IPC HANDLERS ---
 
 // Window Controls

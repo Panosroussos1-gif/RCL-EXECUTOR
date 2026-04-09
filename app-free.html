@@ -166,6 +166,9 @@
         <button class="btn btn-sec" id="sav-btn">
             <i class="fas fa-save"></i> SAVE
         </button>
+        <button class="btn btn-sec" id="loader-btn">
+            <i class="fas fa-link"></i> LOADER
+        </button>
 
         <div class="status">
             <div class="status-dot" id="rbx-status">
@@ -195,6 +198,14 @@
                 content: editor.value 
             });
             if (res.success) alert('Saved!');
+        };
+
+        document.getElementById('loader-btn').onclick = async () => {
+            const loader = await ipcRenderer.invoke('get-loader');
+            if (loader) {
+                navigator.clipboard.writeText(loader);
+                alert('Connection Script Copied! Paste this into Roblox Studio (or another executor) and run it to connect to this app.');
+            }
         };
 
         execBtn.onclick = async () => {

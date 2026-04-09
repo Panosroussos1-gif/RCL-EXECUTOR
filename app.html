@@ -588,6 +588,9 @@ initialize()</textarea>
                 <button class="btn btn-dark" id="save-btn">
                     <i class="fas fa-save"></i> SAVE
                 </button>
+                <button class="btn btn-dark" id="copy-loader-btn">
+                    <i class="fas fa-link"></i> COPY LOADER
+                </button>
 
                 <div class="status-container">
                     <div class="status-item" id="roblox-status">
@@ -945,7 +948,6 @@ initialize()</textarea>
             }, 3000);
         }
 
-        // Save Function
         document.getElementById('save-btn').onclick = async () => {
             const name = prompt('Save as (filename):', 'Script.lua');
             if (name) {
@@ -960,6 +962,18 @@ initialize()</textarea>
                 } else {
                     addLog('ERROR', res.error, '#ff4d4d');
                 }
+            }
+        };
+
+        // Copy Loader Function
+        document.getElementById('copy-loader-btn').onclick = async () => {
+            const loader = await ipcRenderer.invoke('get-loader');
+            if (loader) {
+                navigator.clipboard.writeText(loader);
+                addLog('SUCCESS', 'Loader script copied to clipboard!', '#00ff88');
+                alert('Connection Script Copied! Paste this into Roblox Studio (or another executor) and run it to connect to this app.');
+            } else {
+                addLog('ERROR', 'Failed to get loader script.', '#ff4d4d');
             }
         };
 

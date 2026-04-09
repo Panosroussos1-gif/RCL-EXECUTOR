@@ -1098,6 +1098,10 @@ initialize()</textarea>
             consoleSection.scrollTop = consoleSection.scrollHeight;
         });
 
+        ipcRenderer.on('server-log', (event, msg) => {
+            addLog('SERVER', msg, '#ff00ff');
+        });
+
         // Init
         updateLineNumbers();
         startRobloxCheck();

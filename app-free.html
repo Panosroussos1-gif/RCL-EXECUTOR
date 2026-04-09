@@ -238,6 +238,16 @@
             consoleOutput.scrollTop = consoleOutput.scrollHeight;
         });
 
+        ipcRenderer.on('server-log', (event, msg) => {
+            if (consoleOutput.innerHTML.includes('Waiting for Roblox logs...')) consoleOutput.innerHTML = '';
+            const entry = document.createElement('div');
+            entry.style.color = '#ff00ff';
+            entry.style.marginBottom = '2px';
+            entry.textContent = `[SERVER] ${msg}`;
+            consoleOutput.appendChild(entry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        });
+
         document.getElementById('cls-btn').onclick = () => ipcRenderer.send('close-app');
         document.getElementById('min-btn').onclick = () => ipcRenderer.send('minimize-app');
 

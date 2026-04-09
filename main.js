@@ -24,14 +24,17 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.url === '/get-script') {
+    if (win) win.webContents.send('server-log', 'Script requested by loader');
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end(executionBuffer); 
     executionBuffer = ""; // Clear after serving
   } else if (req.url === '/heartbeat') {
     lastHeartbeat = Date.now();
+    if (win) win.webContents.send('server-log', 'Heartbeat received');
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('OK');
   } else if (req.url === '/loader') {
+    if (win) win.webContents.send('server-log', 'Loader file requested');
     try {
       const loader = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -246,7 +249,7 @@ ipcMain.handle('execute-script', (event, content) => {
 });
 
 ipcMain.handle('inject-standalone', async () => {
-  const oneLiner = 'loadstring(game:HttpGet("http://127.0.0.1:5500/loader"))()';
+  const oneLiner = 'loadstring(game:HttpGet("http://127.0.0.1:5500/loader") or game:HttpGet("http://localhost:5500/loader"))()';
   clipboard.writeText(oneLiner);
 
   const appleScript = `
@@ -262,14 +265,20 @@ ipcMain.handle('inject-standalone', async () => {
       end repeat
       
       if foundProcess is not "" then
+        -- Force Focus
         set frontmost of process foundProcess to true
-        delay 1
+        delay 1.5
+        
         -- Open Chat
         keystroke "/"
-        delay 0.5
-        -- Paste Loader
-        keystroke "v" using {command down}
-        delay 0.5
+        delay 0.8
+        
+        -- Paste Loader (more robust method)
+        key down command
+        keystroke "v"
+        key up command
+        delay 0.8
+        
         -- Execute
         key code 36
         return "SUCCESS:" & foundProcess
@@ -280,7 +289,7 @@ ipcMain.handle('inject-standalone', async () => {
   `;
 
   return new Promise((resolve) => {
-    const osascript = exec(`osascript -e '${appleScript}'`, { timeout: 15000 }, (err, stdout, stderr) => {
+    const osascript = exec(`osascript -e '${appleScript}'`, { timeout: 20000 }, (err, stdout, stderr) => {
       if (err) {
         console.error('AppleScript Error:', err);
         return resolve({ success: false, error: err.message });

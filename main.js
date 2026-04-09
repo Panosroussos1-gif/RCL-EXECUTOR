@@ -251,11 +251,20 @@ ipcMain.handle('execute-script', (event, content) => {
 ipcMain.handle('inject-internal', async () => {
   return new Promise((resolve) => {
     const loaderPath = path.join(__dirname, 'bin', 'rcl_loader');
+    console.log('Running internal loader from:', loaderPath);
+    
+    // Check if loader exists
+    if (!fs.existsSync(loaderPath)) {
+      return resolve({ success: false, error: 'Internal loader binary (rcl_loader) not found. Please run build.sh.' });
+    }
+
+    // Run the loader
     exec(`"${loaderPath}"`, (err, stdout, stderr) => {
       if (err) {
         console.error('Internal Loader Error:', err);
         return resolve({ success: false, error: err.message });
       }
+      console.log('Internal Loader Output:', stdout);
       resolve({ success: true, output: stdout });
     });
   });

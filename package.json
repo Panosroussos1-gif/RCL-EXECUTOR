@@ -20,7 +20,8 @@
         "zip"
       ],
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "identity": null
     },
     "win": {
       "target": "nsis",

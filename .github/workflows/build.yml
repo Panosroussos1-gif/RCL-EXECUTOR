@@ -13,6 +13,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      CSC_IDENTITY_AUTO_DISCOVERY: false
 
     strategy:
       fail-fast: false
@@ -26,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Install Dependencies
         run: npm install

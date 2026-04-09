@@ -295,6 +295,15 @@ ipcMain.handle('inject-internal', async () => {
 
     child.on('close', (code) => {
       if (code === 0) {
+        // Bring executor back to front after Roblox launches
+        setTimeout(() => {
+          if (win) {
+            win.show();
+            win.focus();
+            win.setAlwaysOnTop(true);
+            setTimeout(() => win.setAlwaysOnTop(false), 1000);
+          }
+        }, 2000);
         resolve({ success: true, output });
       } else {
         resolve({ success: false, error: errorOutput || `Loader exited with code ${code}`, debugPath: loaderPath });

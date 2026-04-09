@@ -60,18 +60,17 @@ static void initialize() {
         std::cout << "------------------------------------------" << std::endl;
         
         while (true) {
+            // Send Heartbeat to let the app know we are alive
+            http_get("127.0.0.1", 5500, "/heartbeat");
+            
             // Poll the Electron server for new scripts
             std::string script = http_get("127.0.0.1", 5500, "/get-script");
             
             if (!script.empty()) {
                 std::cout << "[RCL] Executing script (Internal): " << script.substr(0, 50) << "..." << std::endl;
-                
-                // This is where we will hook the Roblox Lua State
-                // For now, we will just log it to prove the bridge works!
-                // Real implementation: execute_in_roblox(script);
             }
             
-            usleep(200000); // Poll every 200ms
+            usleep(500000); // Poll every 500ms
         }
     }).detach();
 }

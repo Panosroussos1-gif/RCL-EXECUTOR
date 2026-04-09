@@ -5,107 +5,73 @@
 #include <string>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 extern char **environ;
 
+// Function to find the PID of a running process by name
+pid_t find_pid_by_name(const std::string& name) {
+    FILE* pipe = popen(("pgrep -x " + name).c_str(), "r");
+    if (!pipe) return 0;
+    char buffer[128];
+    pid_t pid = 0;
+    if (fgets(buffer, 128, pipe) != NULL) {
+        try {
+            pid = std::stoi(buffer);
+        } catch (...) {
+            pid = 0;
+        }
+    }
+    pclose(pipe);
+    return pid;
+}
+
 int main(int argc, char *argv[]) {
-    // List of possible Roblox installation paths
-    std::vector<std::string> possible_apps = {
-        "/Applications/Roblox.app",
-        "/Users/" + std::string(getlogin() ? getlogin() : "User") + "/Applications/Roblox.app",
-        "/Applications/RobloxPlayer.app"
-    };
+    std::cout << "------------------------------------------" << std::endl;
+    std::cout << "[LOADER] MacSploit-Style Injection (Live)" << std::endl;
+    std::cout << "------------------------------------------" << std::endl;
+
+    // 1. Find the LIVE Roblox process
+    std::string process_name = "RobloxPlayer";
+    pid_t pid = find_pid_by_name(process_name);
     
-    std::string original_app = "";
-    for (const auto& path : possible_apps) {
-        if (access(path.c_str(), F_OK) != -1) {
-            original_app = path;
-            break;
-        }
+    if (pid == 0) {
+        process_name = "RobloxPlayerBeta";
+        pid = find_pid_by_name(process_name);
     }
 
-    if (original_app == "") {
-        std::cerr << "[ERROR] Roblox application not found in standard locations." << std::endl;
+    if (pid == 0) {
+        std::cerr << "[ERROR] Roblox is not running! Please open Roblox first." << std::endl;
         return 1;
     }
-    
-    // Create a temporary path for our "Safe" Roblox
-    std::string temp_dir = "/tmp/rcl_temp";
-    std::string safe_app = temp_dir + "/Roblox.app";
-    
-    // Try to find the binary inside the bundle (RobloxPlayer or RobloxPlayerBeta)
-    std::string safe_binary = "";
-    std::vector<std::string> binary_names = {"RobloxPlayer", "RobloxPlayerBeta", "Roblox"};
-    
-    // Path to our compiled dylib (Must be absolute)
+
+    std::cout << "[STEP 1] Found live Roblox process (PID: " << pid << ")" << std::endl;
+
+    // 2. Get the absolute path to our dylib
     char current_path[1024];
-    if (getcwd(current_path, sizeof(current_path)) == NULL) {
-        std::cerr << "[ERROR] Could not get current directory" << std::endl;
-        return 1;
-    }
+    if (getcwd(current_path, sizeof(current_path)) == NULL) return 1;
     std::string dylib_path = std::string(current_path) + "/bin/rcl_internal.dylib";
+
+    // 3. Injection via lldb (The MacSploit method for live processes)
+    // This script tells lldb to attach to the PID and load our dylib
+    std::cout << "[STEP 2] Injecting dylib into memory..." << std::endl;
     
-    std::cout << "------------------------------------------" << std::endl;
-    std::cout << "[LOADER] Preparing SIP-Friendly Injection..." << std::endl;
-    std::cout << "[INFO] Found Roblox at: " << original_app << std::endl;
-    std::cout << "------------------------------------------" << std::endl;
+    std::string lldb_cmd = "lldb -p " + std::to_string(pid) + " --batch " +
+                          "-o 'process interrupt' " +
+                          "-o 'expression (void*)dlopen(\"" + dylib_path + "\", 10)' " +
+                          "-o 'process continue' " +
+                          "-o 'detach'";
     
-    // 1. Create temp directory
-    mkdir(temp_dir.c_str(), 0777);
-    
-    // 2. Copy the ENTIRE Roblox.app bundle to safe zone
-    if (access(safe_app.c_str(), F_OK) == -1) {
-        std::cout << "[STEP 1] Copying Roblox App bundle to safe zone..." << std::endl;
-        std::string copy_cmd = "cp -R \"" + original_app + "\" \"" + safe_app + "\"";
-        system(copy_cmd.c_str());
-    }
-    
-    // Find the actual binary in the copied bundle
-    for (const auto& name : binary_names) {
-        std::string test_path = safe_app + "/Contents/MacOS/" + name;
-        if (access(test_path.c_str(), F_OK) != -1) {
-            safe_binary = test_path;
-            break;
-        }
+    int result = system(lldb_cmd.c_str());
+
+    if (result == 0) {
+        std::cout << "------------------------------------------" << std::endl;
+        std::cout << "[SUCCESS] RCL Internal injected into live Roblox!" << std::endl;
+        std::cout << "[INFO] You can now use the executor." << std::endl;
+        std::cout << "------------------------------------------" << std::endl;
+    } else {
+        std::cerr << "[ERROR] Injection failed. You may need to grant Terminal 'Developer Tools' access in System Settings." << std::endl;
     }
 
-    if (safe_binary == "") {
-        std::cerr << "[ERROR] Could not find Roblox binary inside the app bundle." << std::endl;
-        return 1;
-    }
-    
-    // 3. Strip Code Signature (Bypasses Library Validation)
-    std::cout << "[STEP 2] Stripping signatures (Bypassing SIP)..." << std::endl;
-    std::string strip_cmd = "codesign --remove-signature \"" + safe_binary + "\" 2>/dev/null";
-    system(strip_cmd.c_str());
-    
-    // 4. Set Environment
-    std::string env_var = "DYLD_INSERT_LIBRARIES=" + dylib_path;
-    
-    std::vector<char*> new_env;
-    new_env.push_back((char*)env_var.c_str());
-    for (char **env = environ; *env != nullptr; ++env) {
-        new_env.push_back(*env);
-    }
-    new_env.push_back(nullptr);
-    
-    // 5. Launch the Safe App
-    std::cout << "[STEP 3] Launching Safe Roblox..." << std::endl;
-    pid_t pid;
-    char* safe_binary_cstr = (char*)safe_binary.c_str();
-    char* const args[] = {safe_binary_cstr, nullptr};
-    
-    int status = posix_spawn(&pid, safe_binary.c_str(), nullptr, nullptr, args, new_env.data());
-    
-    if (status == 0) {
-        std::cout << "[SUCCESS] Internal Injection Active! (PID: " << pid << ")" << std::endl;
-        
-        int wait_status;
-        waitpid(pid, &wait_status, 0);
-        std::cout << "[INFO] Roblox closed." << std::endl;
-    } else {
-        std::cerr << "[ERROR] Failed to launch: " << status << std::endl;
-    }
-    
     return 0;
 }

@@ -9,20 +9,38 @@ let win;
 let logWatcher = null;
 let lastLogSize = 0;
 let executionBuffer = "";
+let lastHeartbeat = 0;
 
 // Create a simple HTTP server to communicate with Roblox
 const server = http.createServer((req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.url === '/get-script') {
-    res.writeHead(200, { 
-      'Content-Type': 'text/plain',
-      'Access-Control-Allow-Origin': '*' 
-    });
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end(executionBuffer); 
     executionBuffer = ""; // Clear after serving
+  } else if (req.url === '/heartbeat') {
+    lastHeartbeat = Date.now();
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
   } else {
     res.writeHead(404);
     res.end();
   }
+});
+
+// --- NEW: HEARTBEAT STATUS ---
+ipcMain.handle('check-loader-status', () => {
+  const isConnected = (Date.now() - lastHeartbeat) < 5000; // Connected if heartbeat in last 5s
+  return isConnected;
 });
 
 server.on('error', (e) => {

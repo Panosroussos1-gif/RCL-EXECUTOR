@@ -204,7 +204,18 @@
             if (isInjected) return;
             injectBtn.disabled = true;
             injectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+
+            const injectionTimeout = setTimeout(() => {
+                if (!isInjected) {
+                    injectBtn.disabled = false;
+                    injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+                    alert('Injection timed out! \n\nGo to System Settings > Privacy & Security > Accessibility and make sure the app is allowed to control your computer.');
+                }
+            }, 10000);
+
             const res = await ipcRenderer.invoke('inject-standalone');
+            clearTimeout(injectionTimeout);
+
             if (!res.success) {
                 alert('Roblox not found!');
                 injectBtn.disabled = false;

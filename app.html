@@ -1030,7 +1030,18 @@ initialize()</textarea>
             injectBtn.disabled = true;
             injectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INJECTING...';
 
+            // Timeout to reset button if it hangs
+            const injectionTimeout = setTimeout(() => {
+                if (!isInjected) {
+                    addLog('ERROR', 'Injection timed out! Check Accessibility permissions.', '#ff4d4d');
+                    injectBtn.disabled = false;
+                    injectBtn.innerHTML = '<i class="fas fa-syringe"></i> RETRY INJECT';
+                    alert('Injection is taking too long! \n\nPlease make sure you have granted "Accessibility" permissions to the app in System Settings > Privacy & Security > Accessibility.');
+                }
+            }, 10000);
+
             const res = await ipcRenderer.invoke('inject-standalone');
+            clearTimeout(injectionTimeout);
             
             if (res.success) {
                 addLog('SUCCESS', 'Injection script sent to Roblox!', '#00ff88');

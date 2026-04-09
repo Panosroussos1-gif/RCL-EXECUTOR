@@ -134,7 +134,10 @@ ipcMain.handle('inject-internal', async () => {
       path.join(process.resourcesPath, 'bin', 'rcl_loader'),
       path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'rcl_loader'),
       path.join(app.getAppPath(), 'bin', 'rcl_loader'),
-      path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader')
+      path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
+      // Add a direct path to Applications for built app
+      '/Applications/RCL Executor 20.app/Contents/Resources/app.asar.unpacked/bin/rcl_loader',
+      '/Applications/RCL Executor 19.app/Contents/Resources/app.asar.unpacked/bin/rcl_loader'
     ];
 
     let loaderPath = "";

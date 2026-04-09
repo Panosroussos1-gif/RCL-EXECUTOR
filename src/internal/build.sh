@@ -48,8 +48,7 @@ if [ $? -eq 0 ]; then
         echo "[SUCCESS] Signed successfully."
         echo "------------------------------------------"
         echo "To use internal mode:"
-        echo "1. Disable SIP (csrutil disable)"
-        echo "2. Run: ./bin/rcl_loader"
+        echo "1. Run: ./bin/rcl_loader"
         echo "------------------------------------------"
     else
         echo "[ERROR] Signing failed."

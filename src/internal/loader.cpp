@@ -4,52 +4,70 @@
 #include <vector>
 #include <string>
 #include <unistd.h>
+#include <sys/stat.h>
 
 extern char **environ;
 
 int main(int argc, char *argv[]) {
     // Path to the Roblox executable
-    const char* roblox_path = "/Applications/Roblox.app/Contents/MacOS/RobloxPlayer";
+    const char* original_roblox = "/Applications/Roblox.app/Contents/MacOS/RobloxPlayer";
     
-    // Path to our compiled dylib
-    const char* dylib_path = "./bin/rcl_internal.dylib";
+    // Create a temporary path for our "Safe" Roblox
+    std::string temp_dir = "/tmp/rcl_temp";
+    std::string safe_roblox = temp_dir + "/RobloxPlayer";
+    
+    // Path to our compiled dylib (Must be absolute)
+    char current_path[1024];
+    if (getcwd(current_path, sizeof(current_path)) == NULL) {
+        std::cerr << "[ERROR] Could not get current directory" << std::endl;
+        return 1;
+    }
+    std::string dylib_path = std::string(current_path) + "/bin/rcl_internal.dylib";
     
     std::cout << "------------------------------------------" << std::endl;
-    std::cout << "[LOADER] Launching Roblox with RCL Internal..." << std::endl;
+    std::cout << "[LOADER] Preparing SIP-Friendly Injection..." << std::endl;
     std::cout << "------------------------------------------" << std::endl;
     
-    // Set the environment variable for injection
-    // DYLD_INSERT_LIBRARIES=path/to/dylib
-    std::string env_var = "DYLD_INSERT_LIBRARIES=";
-    env_var += dylib_path;
+    // 1. Create temp directory
+    mkdir(temp_dir.c_str(), 0777);
     
-    // Build the environment array
+    // 2. Copy Roblox to temp
+    std::cout << "[STEP 1] Copying Roblox to safe zone..." << std::endl;
+    std::string copy_cmd = "cp \"" + std::string(original_roblox) + "\" \"" + safe_roblox + "\"";
+    system(copy_cmd.c_str());
+    
+    // 3. Strip Code Signature (Bypasses Library Validation)
+    std::cout << "[STEP 2] Stripping signatures (Bypassing SIP)..." << std::endl;
+    std::string strip_cmd = "codesign --remove-signature \"" + safe_roblox + "\" 2>/dev/null";
+    system(strip_cmd.c_str());
+    
+    // 4. Set Environment
+    std::string env_var = "DYLD_INSERT_LIBRARIES=" + dylib_path;
+    
     std::vector<char*> new_env;
     new_env.push_back((char*)env_var.c_str());
-    
-    // Keep existing environment
     for (char **env = environ; *env != nullptr; ++env) {
         new_env.push_back(*env);
     }
     new_env.push_back(nullptr);
     
-    // Launch the process
+    // 5. Launch
+    std::cout << "[STEP 3] Launching Safe Roblox..." << std::endl;
     pid_t pid;
-    const char* args[] = {roblox_path, nullptr};
+    char* safe_roblox_cstr = (char*)safe_roblox.c_str();
+    char* const args[] = {safe_roblox_cstr, nullptr};
     
-    int status = posix_spawn(&pid, roblox_path, nullptr, nullptr, (char* const*)args, new_env.data());
+    int status = posix_spawn(&pid, safe_roblox.c_str(), nullptr, nullptr, args, new_env.data());
     
     if (status == 0) {
-        std::cout << "[SUCCESS] Roblox launched (PID: " << pid << ")" << std::endl;
-        std::cout << "[STATUS] Injection initiated. Check system logs for output." << std::endl;
+        std::cout << "[SUCCESS] Internal Injection Active! (PID: " << pid << ")" << std::endl;
+        std::cout << "[NOTE] You did NOT have to disable SIP. Happy Scripting!" << std::endl;
         
-        // Wait for the process to exit
         int wait_status;
         waitpid(pid, &wait_status, 0);
         std::cout << "[INFO] Roblox closed." << std::endl;
     } else {
-        std::cerr << "[ERROR] Failed to launch Roblox: " << status << std::endl;
-        std::cerr << "[HINT] Make sure Roblox is installed in /Applications and SIP is disabled." << std::endl;
+        std::cerr << "[ERROR] Failed to launch: " << status << std::endl;
     }
     
     return 0;

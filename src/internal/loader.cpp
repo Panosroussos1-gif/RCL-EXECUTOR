@@ -49,28 +49,58 @@ int main(int argc, char *argv[]) {
 
     // 2. Get the absolute path to our dylib
     char current_path[1024];
-    if (getcwd(current_path, sizeof(current_path)) == NULL) return 1;
+    if (getcwd(current_path, sizeof(current_path)) == NULL) {
+        std::cerr << "ERROR: Could not get current directory" << std::endl;
+        return 1;
+    }
     std::string dylib_path = std::string(current_path) + "/bin/rcl_internal.dylib";
+    
+    // Check if dylib exists
+    if (access(dylib_path.c_str(), F_OK) == -1) {
+        std::cerr << "ERROR: Internal Engine (dylib) not found at: " << dylib_path << std::endl;
+        return 1;
+    }
 
-    // 3. Injection via lldb (The MacSploit method for live processes)
-    // This script tells lldb to attach to the PID and load our dylib
+    // 3. Injection via lldb
     std::cout << "[STEP 2] Injecting dylib into memory..." << std::endl;
     
+    // Use a more verbose lldb command to see what's happening
     std::string lldb_cmd = "lldb -p " + std::to_string(pid) + " --batch " +
                           "-o 'process interrupt' " +
                           "-o 'expression (void*)dlopen(\"" + dylib_path + "\", 10)' " +
                           "-o 'process continue' " +
-                          "-o 'detach'";
+                          "-o 'detach' 2>&1";
     
-    int result = system(lldb_cmd.c_str());
+    FILE* lldb_pipe = popen(lldb_cmd.c_str(), "r");
+    if (!lldb_pipe) {
+        std::cerr << "ERROR: Failed to run lldb" << std::endl;
+        return 1;
+    }
 
-    if (result == 0) {
+    char lldb_buffer[512];
+    bool success = false;
+    while (fgets(lldb_buffer, 512, lldb_pipe) != NULL) {
+        std::string line(lldb_buffer);
+        std::cout << "  [LLDB] " << line;
+        if (line.find("0x") != std::string::npos && line.find("$") != std::string::npos) {
+            success = true; // dlopen returned a handle
+        }
+        if (line.find("error:") != std::string::npos) {
+            std::cerr << "  [LLDB ERROR] " << line;
+        }
+    }
+    pclose(lldb_pipe);
+
+    if (success) {
         std::cout << "------------------------------------------" << std::endl;
-        std::cout << "[SUCCESS] RCL Internal injected into live Roblox!" << std::endl;
-        std::cout << "[INFO] You can now use the executor." << std::endl;
+        std::cout << "[SUCCESS] RCL Internal injected successfully!" << std::endl;
         std::cout << "------------------------------------------" << std::endl;
     } else {
-        std::cerr << "[ERROR] Injection failed. You may need to grant Terminal 'Developer Tools' access in System Settings." << std::endl;
+        std::cerr << "------------------------------------------" << std::endl;
+        std::cerr << "[ERROR] Injection failed. Check the LLDB logs above." << std::endl;
+        std::cerr << "HINT: You may need to run 'sudo DevToolsSecurity --enable' in your terminal." << std::endl;
+        std::cerr << "------------------------------------------" << std::endl;
+        return 1;
     }
 
     return 0;

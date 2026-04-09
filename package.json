@@ -5,6 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "start:free": "electron main-free.js",
     "build": "electron-builder"
   },
   "build": {

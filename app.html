@@ -596,7 +596,7 @@ initialize()</textarea>
                 <button class="btn btn-inject" id="internal-btn" style="background: #00ccff;">
                     <i class="fas fa-microchip"></i> INTERNAL
                 </button>
-                <button class="btn btn-primary" id="execute-btn" disabled>
+                <button class="btn btn-primary" id="execute-btn">
                     <i class="fas fa-play"></i> EXECUTE
                 </button>
                 <button class="btn btn-dark" id="clear-btn">
@@ -995,11 +995,6 @@ initialize()</textarea>
 
         // Execution Logic
         executeBtn.onclick = async () => {
-            if (!isInjected) {
-                addLog('ERROR', 'Please INJECT first!', '#ff4d4d');
-                return;
-            }
-            
             const success = await ipcRenderer.invoke('execute-script', editor.value);
             if (success) {
                 addLog('EXECUTE', 'Script sent to buffer.', '#00ff88');

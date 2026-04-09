@@ -36,20 +36,22 @@ function createWindow() {
     transparent: true,
     frame: false,
     alwaysOnTop: true,
+    resizable: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
 
-  splash.loadFile('splash.html');
+  splash.loadFile(path.join(__dirname, 'splash.html'));
 
   win = new BrowserWindow({
     width: 800,
     height: 600,
-    show: false, // Don't show the main window until splash is done
+    show: false,
     frame: false,
     transparent: true,
+    resizable: false,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
@@ -57,7 +59,7 @@ function createWindow() {
     }
   });
 
-  win.loadFile('app.html');
+  win.loadFile(path.join(__dirname, 'app.html'));
 
   // After 4.5 seconds, hide splash and show main window
   setTimeout(() => {

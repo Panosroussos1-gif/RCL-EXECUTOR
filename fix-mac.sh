@@ -1,19 +1,36 @@
 #!/bin/bash
-# Script to fix "damaged" message on macOS
 
-APP_NAME="RCL Executor.app"
+# .RCL EXECUTOR - MASTER SETUP SCRIPT
+# This script automates everything to make it "One-Click" like MacSploit.
 
-if [ ! -d "/Applications/$APP_NAME" ]; then
-    echo "Error: $APP_NAME not found in /Applications."
-    echo "Please move the app to /Applications first."
-    exit 1
-fi
+echo "------------------------------------------"
+echo "🚀 INITIALIZING .RCL INTERNAL ENGINE"
+echo "------------------------------------------"
 
-echo "Fixing '$APP_NAME'..."
-sudo xattr -rd com.apple.quarantine "/Applications/$APP_NAME" 2>/dev/null
-sudo xattr -cr "/Applications/$APP_NAME" 2>/dev/null
-sudo chmod -R 755 "/Applications/$APP_NAME"
-sudo codesign --force --deep --sign - "/Applications/$APP_NAME"
+PROJECT_DIR="/Users/User/Documents/trae_projects/robloc studio"
+cd "$PROJECT_DIR"
 
-echo "Done! You can now open the app."
-echo "If you still see an error, try right-clicking the app and choosing 'Open'."
+# 1. Clean up
+echo "[1/4] Clearing old temporary files..."
+rm -rf /tmp/rcl_temp
+
+# 2. Build Binaries
+echo "[2/4] Building Internal Engine for M5..."
+mkdir -p bin
+clang++ -dynamiclib -arch arm64 -fPIC -std=c++17 src/internal/main.cpp -o bin/rcl_internal.dylib -lstdc++
+clang++ -arch arm64 -std=c++17 src/internal/loader.cpp -o bin/rcl_loader -lstdc++
+
+# 3. Sign and Permissions
+echo "[3/4] Signing binaries and fixing permissions..."
+codesign --force --deep --sign - bin/rcl_internal.dylib
+codesign --force --deep --sign - bin/rcl_loader
+chmod +x bin/rcl_loader
+chmod +x src/internal/insert_dylib
+
+# 4. Launch
+echo "[4/4] Launching Executor..."
+echo "------------------------------------------"
+echo "✅ SETUP COMPLETE! HAPPY SCRIPTING."
+echo "------------------------------------------"
+
+npm start

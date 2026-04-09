@@ -13,7 +13,7 @@ let executionBuffer = "";
 const server = http.createServer((req, res) => {
   if (req.url === '/get-script') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end(executionBuffer);
+    res.end(executionBuffer); 
     executionBuffer = ""; // Clear after serving
   } else {
     res.writeHead(404);

@@ -360,6 +360,48 @@
         .badge-unsafe { background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid var(--error); }
         .badge-safe { background: rgba(0, 255, 136, 0.1); color: var(--primary); border: 1px solid var(--primary); }
 
+        /* --- Fix Instructions --- */
+        .fix-box {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .fix-box h4 { color: #fff; margin-bottom: 10px; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+        .fix-box p { font-size: 13px; color: #888; margin-bottom: 15px; }
+        
+        .code-snippet {
+            background: #000;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono';
+            font-size: 12px;
+            color: var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #222;
+        }
+
+        .copy-btn {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        .copy-btn:active { transform: scale(0.95); }
+
         /* --- Footer --- */
         footer {
             padding: 80px 8% 40px;
@@ -556,13 +598,27 @@
     </nav>
 
     <!-- Global Status Banner -->
-    <div style="margin-top: 80px; padding: 15px 8%; background: rgba(255, 170, 0, 0.1); border-bottom: 1px solid rgba(255, 170, 0, 0.2); display: flex; flex-direction: column; gap: 8px; text-align: center;">
+    <div style="margin-top: 80px; padding: 15px 8%; background: rgba(255, 170, 0, 0.1); border-bottom: 1px solid rgba(255, 170, 0, 0.2); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;">
         <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #ffaa00; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
             <i class="fas fa-exclamation-triangle"></i> PROJECT STATUS & WARNINGS
         </div>
         <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
-            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">macOS:</b> In testing. If it says "damaged", run <code style="background: #222; padding: 2px 5px; border-radius: 3px; color: var(--primary);">xattr -cr RCL-Executor.app</code> in terminal.</p>
-            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">Windows:</b> Payment systems and license codes are still under development.</p>
+            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">macOS:</b> In testing phase. If you see a "damaged" message, follow the steps below.</p>
+            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">Windows:</b> Development ongoing for payments and codes.</p>
+        </div>
+
+        <!-- Fix Box -->
+        <div class="fix-box">
+            <h4><i class="fas fa-tools"></i> Fix macOS "Damaged" Message</h4>
+            <p>macOS blocks unsigned apps from the internet. Follow these 2 steps to fix it:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="font-size: 12px; color: #eee; font-weight: 600;">Step 1: Open Terminal and paste this:</div>
+                <div class="code-snippet">
+                    <span id="cmd-text">sudo xattr -cr /Applications/RCL-Executor.app</span>
+                    <button class="copy-btn" onclick="copyCode()">Copy</button>
+                </div>
+                <p style="margin-top: 5px; font-size: 11px; color: #666;">Step 2: Enter your Mac password and press Enter. The app will now open!</p>
+            </div>
         </div>
     </div>
 
@@ -757,6 +813,18 @@
             } else {
                 info.style.display = 'none';
             }
+        }
+
+        function copyCode() {
+            const text = document.getElementById('cmd-text').innerText;
+            navigator.clipboard.writeText(text);
+            const btn = document.querySelector('.copy-btn');
+            btn.innerText = 'Copied!';
+            btn.style.background = '#fff';
+            setTimeout(() => {
+                btn.innerText = 'Copy';
+                btn.style.background = 'var(--primary)';
+            }, 2000);
         }
 
         function processPayment() {

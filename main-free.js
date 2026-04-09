@@ -10,7 +10,10 @@ let executionBuffer = "";
 // Simple HTTP server for Roblox communication
 const server = http.createServer((req, res) => {
   if (req.url === '/get-script') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.writeHead(200, { 
+      'Content-Type': 'text/plain',
+      'Access-Control-Allow-Origin': '*'
+    });
     res.end(executionBuffer); 
     executionBuffer = ""; 
   } else {

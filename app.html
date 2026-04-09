@@ -644,64 +644,49 @@ initialize()</textarea>
                     <div class="category-chip">UTILITY</div>
                 </div>
                 <div class="script-grid">
-                    <div class="script-card" onclick="loadScript('Fly GUI', '-- Fly Script\nprint(\'Flying...\')')">
-                        <div class="script-card-header">
-                            <h3>Fly GUI</h3>
-                            <div class="script-meta">
-                                <span><i class="fas fa-user"></i> Panos</span>
-                            </div>
-                        </div>
-                        <p>High-speed flight utility with customizable speed and vertical stabilization.</p>
-                        <div class="script-meta">
-                            <span><i class="fas fa-code-branch"></i> v2.1</span>
-                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
-                        </div>
-                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
-                    </div>
-                    
-                    <div class="script-card" onclick="loadScript('Aimbot', '-- Aimbot V2\nprint(\'Aimbot active\')')">
-                        <div class="script-card-header">
-                            <h3>Aimbot V2</h3>
-                            <div class="script-meta">
-                                <span><i class="fas fa-user"></i> RCL Team</span>
-                            </div>
-                        </div>
-                        <p>Silent aim with FOV circle and prediction logic for various FPS games.</p>
-                        <div class="script-meta">
-                            <span><i class="fas fa-code-branch"></i> v1.4</span>
-                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
-                        </div>
-                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
-                    </div>
-
-                    <div class="script-card" onclick="loadScript('Universal ESP', '-- ESP Script\nprint(\'Showing players\')')">
-                        <div class="script-card-header">
-                            <h3>Universal ESP</h3>
-                            <div class="script-meta">
-                                <span><i class="fas fa-user"></i> Panos</span>
-                            </div>
-                        </div>
-                        <p>Wallhack showing boxes, names, and health for all players globally.</p>
-                        <div class="script-meta">
-                            <span><i class="fas fa-code-branch"></i> v3.0</span>
-                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
-                        </div>
-                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
-                    </div>
-
-                    <div class="script-card" onclick="loadScript('Infinite Yield', 'loadstring(game:HttpGet(\'...\'))()')">
+                    <div class="script-card" onclick="loadScript('Infinite Yield', 'https://raw.githubusercontent.com/Edgeiy/infiniteyield/master/source')">
                         <div class="script-card-header">
                             <h3>Infinite Yield</h3>
                             <div class="script-meta">
                                 <span><i class="fas fa-user"></i> Edgeiy</span>
                             </div>
                         </div>
-                        <p>Massive admin command script with over 500 unique features and commands.</p>
+                        <p>The most famous admin command script with 500+ commands.</p>
                         <div class="script-meta">
-                            <span><i class="fas fa-code-branch"></i> v5.3</span>
+                            <span><i class="fas fa-code-branch"></i> v5.9</span>
                             <span><i class="fas fa-shield-alt"></i> SECURE</span>
                         </div>
-                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
+                        <span class="load-btn"><i class="fas fa-download"></i> FETCH FROM WEB</span>
+                    </div>
+
+                    <div class="script-card" onclick="loadScript('Dex Explorer', 'https://raw.githubusercontent.com/infyiff/backup/main/dex.lua')">
+                        <div class="script-card-header">
+                            <h3>Dex Explorer</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> Moon</span>
+                            </div>
+                        </div>
+                        <p>Advanced game explorer to view and edit game objects in real-time.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v4.0</span>
+                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> FETCH FROM WEB</span>
+                    </div>
+
+                    <div class="script-card" onclick="loadScript('Vape V4', 'https://raw.githubusercontent.com/7GrandDadPGN/VapeV4ForRoblox/main/NewMainScript.lua')">
+                        <div class="script-card-header">
+                            <h3>Vape V4</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> 7GrandDad</span>
+                            </div>
+                        </div>
+                        <p>The ultimate combat and utility collection for Bedwars and more.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v4.0</span>
+                            <span><i class="fas fa-shield-alt"></i> BEST BYPASS</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> FETCH FROM WEB</span>
                     </div>
                 </div>
             </div>
@@ -903,9 +888,20 @@ initialize()</textarea>
         }
 
         // Script Hub Logic
-        function loadScript(name, content) {
-            editor.value = content;
-            addLog('HUB', `Loaded script: ${name}`, '#00ccff');
+        async function loadScript(name, contentOrUrl) {
+            if (contentOrUrl.startsWith('http')) {
+                addLog('HUB', `Fetching ${name} from web...`, '#00ccff');
+                const content = await ipcRenderer.invoke('fetch-hub-script', contentOrUrl);
+                if (content) {
+                    editor.value = content;
+                    addLog('SUCCESS', `Loaded ${name} from URL.`, '#00ff88');
+                } else {
+                    addLog('ERROR', `Failed to fetch ${name}.`, '#ff4d4d');
+                }
+            } else {
+                editor.value = contentOrUrl;
+                addLog('HUB', `Loaded local script: ${name}`, '#00ccff');
+            }
             closeOverlays();
             updateLineNumbers();
         }
@@ -967,22 +963,18 @@ initialize()</textarea>
             }
         };
 
-        // Execution Logic (AutoExec Support)
+        // Execution Logic
         executeBtn.onclick = async () => {
-            if (!isInjected) return;
+            if (!isInjected) {
+                addLog('ERROR', 'Please INJECT first!', '#ff4d4d');
+                return;
+            }
             
-            // For a "real" experience, we'll save it to the autoexec folder
-            // Real executors often have an "autoexec" folder they watch.
-            const res = await ipcRenderer.invoke('save-file', { 
-                name: 'executed_script', 
-                content: editor.value, 
-                isAutoExec: true 
-            });
-            
-            if (res.success) {
-                addLog('EXECUTE', 'Script sent to AutoExec.', '#00ff88');
+            const success = await ipcRenderer.invoke('execute-script', editor.value);
+            if (success) {
+                addLog('EXECUTE', 'Script sent to buffer.', '#00ff88');
             } else {
-                addLog('ERROR', 'Execution failed to write buffer.', '#ff4d4d');
+                addLog('ERROR', 'Execution failed.', '#ff4d4d');
             }
         };
 

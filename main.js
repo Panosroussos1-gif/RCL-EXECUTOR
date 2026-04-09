@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
 const http = require('http');
+const https = require('https');
 
 let win;
 let logWatcher = null;
@@ -12,7 +13,10 @@ let executionBuffer = "";
 // Create a simple HTTP server to communicate with Roblox
 const server = http.createServer((req, res) => {
   if (req.url === '/get-script') {
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.writeHead(200, { 
+      'Content-Type': 'text/plain',
+      'Access-Control-Allow-Origin': '*' 
+    });
     res.end(executionBuffer); 
     executionBuffer = ""; // Clear after serving
   } else {
@@ -143,9 +147,39 @@ function startWatchingLogs() {
   }, 1000);
 }
 
+function startWatchingAutoExec() {
+  const autoexecPath = path.join(app.getPath('userData'), 'autoexec');
+  if (!fs.existsSync(autoexecPath)) return;
+
+  // Initial read of autoexec folder
+  const files = fs.readdirSync(autoexecPath);
+  files.forEach(file => {
+    if (file.endsWith('.lua')) {
+      const content = fs.readFileSync(path.join(autoexecPath, file), 'utf8');
+      executionBuffer += "\n" + content;
+      console.log(`Auto-executing initial: ${file}`);
+    }
+  });
+
+  // Watch for new files
+  fs.watch(autoexecPath, (eventType, filename) => {
+    if (filename && filename.endsWith('.lua')) {
+      const filePath = path.join(autoexecPath, filename);
+      if (fs.existsSync(filePath)) {
+        try {
+          const content = fs.readFileSync(filePath, 'utf8');
+          executionBuffer += "\n" + content;
+          console.log(`Auto-executing new: ${filename}`);
+        } catch (e) {}
+      }
+    }
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
   startWatchingLogs();
+  startWatchingAutoExec();
 
   // Create workspace directories
   const workspacePath = path.join(app.getPath('userData'), 'workspace');
@@ -164,6 +198,24 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// --- NEW: SCRIPT HUB FETCHING ---
+ipcMain.handle('fetch-hub-script', async (event, url) => {
+  return new Promise((resolve) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => data += chunk);
+      res.on('end', () => resolve(data));
+      res.on('error', () => resolve(null));
+    }).on('error', () => resolve(null));
+  });
+});
+
+// --- NEW: SCRIPT EXECUTION ---
+ipcMain.handle('execute-script', (event, content) => {
+  executionBuffer += "\n" + content;
+  return true;
 });
 
 // --- REAL FUNCTIONALITY IPC HANDLERS ---

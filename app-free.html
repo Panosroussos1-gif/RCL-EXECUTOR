@@ -5,16 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RCL Executor (Free)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #00ff88;
-            --primary-glow: rgba(0, 255, 136, 0.2);
-            --bg-dark: #0a0a0a;
-            --bg-surface: #121212;
-            --border: rgba(255, 255, 255, 0.08);
-            --text-main: #e0e0e0;
-            --text-dim: #666;
+            --bg: #0a0a0a;
+            --surface: #121212;
+            --border: rgba(255, 255, 255, 0.05);
+            --text: #ffffff;
         }
 
         * {
@@ -26,18 +24,17 @@
 
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            background-color: var(--bg);
+            color: var(--text);
             height: 100vh;
             overflow: hidden;
-            border: 1px solid #222;
             display: flex;
             flex-direction: column;
+            border: 1px solid #222;
         }
 
-        /* --- Simple Title Bar --- */
-        .header {
-            height: 40px;
+        .titlebar {
+            height: 35px;
             background: #0d0d0d;
             display: flex;
             justify-content: space-between;
@@ -47,8 +44,8 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .header .logo {
-            font-size: 11px;
+        .titlebar .logo {
+            font-size: 10px;
             font-weight: 800;
             color: var(--primary);
             letter-spacing: 1px;
@@ -57,7 +54,7 @@
 
         .window-controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             -webkit-app-region: no-drag;
         }
 
@@ -71,25 +68,10 @@
         .control-btn:hover { color: #fff; }
         .close:hover { color: #ff4d4d; }
 
-        /* --- Editor Area --- */
         .editor-container {
             flex: 1;
             display: flex;
             background: #0d0d0d;
-            position: relative;
-        }
-
-        .line-numbers {
-            width: 40px;
-            background: #0d0d0d;
-            color: #333;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            text-align: right;
-            padding: 20px 8px;
-            border-right: 1px solid var(--border);
-            pointer-events: none;
-            overflow: hidden;
         }
 
         textarea {
@@ -97,71 +79,46 @@
             background: transparent;
             border: none;
             outline: none;
-            color: #ccc;
+            color: #bbb;
             font-family: 'JetBrains Mono', monospace;
             font-size: 13px;
-            padding: 20px;
+            padding: 15px;
             resize: none;
             line-height: 1.5;
             user-select: text;
-            white-space: pre;
-            overflow-x: auto;
         }
 
-        /* --- Action Bar --- */
-        .footer {
+        .actionbar {
             height: 50px;
             background: #0d0d0d;
             display: flex;
             align-items: center;
             padding: 0 15px;
-            gap: 10px;
+            gap: 8px;
             border-top: 1px solid var(--border);
         }
 
         .btn {
-            padding: 8px 16px;
+            padding: 8px 15px;
             font-size: 10px;
             font-weight: 800;
             border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             transition: 0.2s;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             border: 1px solid transparent;
         }
 
-        .btn-execute {
-            background: var(--primary);
-            color: #000;
-        }
+        .btn-exec { background: var(--primary); color: #000; }
+        .btn-exec:hover { transform: translateY(-1px); box-shadow: 0 0 10px rgba(0, 255, 136, 0.2); }
+        
+        .btn-sec { background: #1a1a1a; color: #888; border: 1px solid var(--border); }
+        .btn-sec:hover { background: #222; color: #fff; }
 
-        .btn-execute:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 0 12px var(--primary-glow);
-        }
-
-        .btn-execute:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .btn-secondary {
-            background: #1a1a1a;
-            color: #888;
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: #222;
-            color: #fff;
-            border-color: #444;
-        }
-
-        .status-info {
+        .status {
             margin-left: auto;
             display: flex;
             gap: 15px;
@@ -173,25 +130,22 @@
             color: #444;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
 
-        .status-dot i { font-size: 7px; }
         .status-dot.active { color: var(--primary); }
-        .status-dot.active i { color: var(--primary); text-shadow: 0 0 5px var(--primary); }
+        .status-dot i { font-size: 7px; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #222; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #333; }
 
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="logo">RCL EXECUTOR <span style="opacity: 0.4; font-size: 8px;">FREE</span></div>
+    <div class="titlebar">
+        <div class="logo">RCL FREE</div>
         <div class="window-controls">
             <i class="fas fa-minus control-btn" id="min-btn"></i>
             <i class="fas fa-times control-btn close" id="cls-btn"></i>
@@ -199,27 +153,26 @@
     </div>
 
     <div class="editor-container">
-        <div class="line-numbers" id="line-nums">1</div>
-        <textarea id="editor" spellcheck="false" oninput="updateLines()" placeholder="-- Paste your script here..."></textarea>
+        <textarea id="editor" spellcheck="false" placeholder="-- Paste your script here..."></textarea>
     </div>
 
-    <div class="footer">
-        <button class="btn btn-execute" id="exec-btn">
+    <div class="actionbar">
+        <button class="btn btn-exec" id="exec-btn">
             <i class="fas fa-play"></i> EXECUTE
         </button>
-        <button class="btn btn-secondary" id="clr-btn">
+        <button class="btn btn-sec" id="clr-btn">
             <i class="fas fa-eraser"></i> CLEAR
         </button>
-        <button class="btn btn-secondary" id="sav-btn">
+        <button class="btn btn-sec" id="sav-btn">
             <i class="fas fa-save"></i> SAVE
         </button>
 
-        <div class="status-info">
+        <div class="status">
             <div class="status-dot" id="rbx-status">
                 <i class="fas fa-circle"></i> ROBLOX
             </div>
-            <div class="status-dot" id="inj-status">
-                <i class="fas fa-circle"></i> INJECTED
+            <div class="status-dot active">
+                <i class="fas fa-circle"></i> READY
             </div>
         </div>
     </div>
@@ -228,53 +181,31 @@
         const { ipcRenderer } = require('electron');
 
         const editor = document.getElementById('editor');
-        const lineNums = document.getElementById('line-nums');
         const execBtn = document.getElementById('exec-btn');
         const rbxStatus = document.getElementById('rbx-status');
-        const injStatus = document.getElementById('inj-status');
 
-        // Window Controls
         document.getElementById('cls-btn').onclick = () => ipcRenderer.send('close-app');
         document.getElementById('min-btn').onclick = () => ipcRenderer.send('minimize-app');
 
-        // Logic
-        function updateLines() {
-            const count = editor.value.split('\n').length;
-            let linesStr = '';
-            for (let i = 1; i <= count; i++) linesStr += i + '<br>';
-            lineNums.innerHTML = linesStr;
-        }
-
-        document.getElementById('clr-btn').onclick = () => {
-            editor.value = '';
-            updateLines();
-        };
+        document.getElementById('clr-btn').onclick = () => editor.value = '';
 
         document.getElementById('sav-btn').onclick = async () => {
             const res = await ipcRenderer.invoke('save-file', { 
                 name: 'Script', 
-                content: editor.value, 
-                isAutoExec: false 
+                content: editor.value 
             });
-            if (res.success) alert('Saved to workspace!');
+            if (res.success) alert('Saved!');
         };
 
         execBtn.onclick = async () => {
             await ipcRenderer.invoke('execute-script', editor.value);
         };
 
-        // Sync Status
         setInterval(async () => {
             const isRunning = await ipcRenderer.invoke('check-roblox');
             if (isRunning) rbxStatus.classList.add('active');
             else rbxStatus.classList.remove('active');
-            
-            // For free version, let's assume it's always "injected" or handled simply
-            // You can add more complex logic here if needed.
-            injStatus.classList.add('active'); 
         }, 3000);
-
-        updateLines();
     </script>
 </body>
 </html>

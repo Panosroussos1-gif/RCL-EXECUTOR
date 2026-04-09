@@ -25,8 +25,8 @@ server.listen(5500, '127.0.0.1', () => {
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 650,
-    height: 450,
+    width: 500,
+    height: 350,
     frame: false,
     transparent: true,
     resizable: false,

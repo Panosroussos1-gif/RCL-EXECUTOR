@@ -170,6 +170,12 @@ ipcMain.handle('inject-internal', async () => {
 
     let loaderPath = "";
     for (const p of possiblePaths) {
+      // CRITICAL: Shell execution (exec) CANNOT see inside .asar archives.
+      // We must skip any path that contains 'app.asar' unless it also contains 'app.asar.unpacked'.
+      if (p.includes('app.asar') && !p.includes('app.asar.unpacked')) {
+        continue;
+      }
+      
       if (fs.existsSync(p)) {
         loaderPath = p;
         break;

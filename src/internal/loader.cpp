@@ -9,13 +9,33 @@
 extern char **environ;
 
 int main(int argc, char *argv[]) {
-    // Path to the Roblox application
-    const char* original_app = "/Applications/Roblox.app";
+    // List of possible Roblox installation paths
+    std::vector<std::string> possible_apps = {
+        "/Applications/Roblox.app",
+        "/Users/" + std::string(getlogin() ? getlogin() : "User") + "/Applications/Roblox.app",
+        "/Applications/RobloxPlayer.app"
+    };
+    
+    std::string original_app = "";
+    for (const auto& path : possible_apps) {
+        if (access(path.c_str(), F_OK) != -1) {
+            original_app = path;
+            break;
+        }
+    }
+
+    if (original_app == "") {
+        std::cerr << "[ERROR] Roblox application not found in standard locations." << std::endl;
+        return 1;
+    }
     
     // Create a temporary path for our "Safe" Roblox
     std::string temp_dir = "/tmp/rcl_temp";
     std::string safe_app = temp_dir + "/Roblox.app";
-    std::string safe_binary = safe_app + "/Contents/MacOS/RobloxPlayer";
+    
+    // Try to find the binary inside the bundle (RobloxPlayer or RobloxPlayerBeta)
+    std::string safe_binary = "";
+    std::vector<std::string> binary_names = {"RobloxPlayer", "RobloxPlayerBeta", "Roblox"};
     
     // Path to our compiled dylib (Must be absolute)
     char current_path[1024];
@@ -27,16 +47,31 @@ int main(int argc, char *argv[]) {
     
     std::cout << "------------------------------------------" << std::endl;
     std::cout << "[LOADER] Preparing SIP-Friendly Injection..." << std::endl;
+    std::cout << "[INFO] Found Roblox at: " << original_app << std::endl;
     std::cout << "------------------------------------------" << std::endl;
     
     // 1. Create temp directory
     mkdir(temp_dir.c_str(), 0777);
     
-    // 2. Copy the ENTIRE Roblox.app bundle to safe zone (MacSploit Method)
+    // 2. Copy the ENTIRE Roblox.app bundle to safe zone
     if (access(safe_app.c_str(), F_OK) == -1) {
         std::cout << "[STEP 1] Copying Roblox App bundle to safe zone..." << std::endl;
-        std::string copy_cmd = "cp -R \"" + std::string(original_app) + "\" \"" + safe_app + "\"";
+        std::string copy_cmd = "cp -R \"" + original_app + "\" \"" + safe_app + "\"";
         system(copy_cmd.c_str());
+    }
+    
+    // Find the actual binary in the copied bundle
+    for (const auto& name : binary_names) {
+        std::string test_path = safe_app + "/Contents/MacOS/" + name;
+        if (access(test_path.c_str(), F_OK) != -1) {
+            safe_binary = test_path;
+            break;
+        }
+    }
+
+    if (safe_binary == "") {
+        std::cerr << "[ERROR] Could not find Roblox binary inside the app bundle." << std::endl;
+        return 1;
     }
     
     // 3. Strip Code Signature (Bypasses Library Validation)
@@ -64,7 +99,6 @@ int main(int argc, char *argv[]) {
     
     if (status == 0) {
         std::cout << "[SUCCESS] Internal Injection Active! (PID: " << pid << ")" << std::endl;
-        std::cout << "[NOTE] You did NOT have to disable SIP. Happy Scripting!" << std::endl;
         
         int wait_status;
         waitpid(pid, &wait_status, 0);

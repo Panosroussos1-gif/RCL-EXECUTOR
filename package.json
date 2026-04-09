@@ -35,6 +35,7 @@
       "index.html",
       "login.html",
       "firebase-config.js",
+      "bin/**/*",
       "src/**/*"
     ],
     "asar": true

@@ -257,18 +257,23 @@
 
         /* --- Action Bar --- */
         .action-bar {
-            height: 45px;
+            height: 50px; /* Slightly taller */
             background: #0d0d0d;
             display: flex;
             align-items: center;
             padding: 0 15px;
-            gap: 12px;
+            gap: 8px; /* Smaller gap */
             border-top: 1px solid var(--border);
+            overflow-x: auto; /* Enable horizontal scroll */
+            scrollbar-width: none;
+            flex-wrap: nowrap;
         }
+        .action-bar::-webkit-scrollbar { display: none; }
 
         .btn {
-            padding: 6px 14px;
-            font-size: 10px;
+            padding: 6px 12px; /* Slightly smaller padding */
+            font-size: 9px; /* Smaller font */
+            flex-shrink: 0; /* Don't squash buttons */
             font-weight: 800;
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 6px;

@@ -41,8 +41,14 @@
       "src/**/*"
     ],
     "asar": true,
-    "asarUnpack": [
-      "bin/**/*"
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
     ]
   },
   "author": "Panos",

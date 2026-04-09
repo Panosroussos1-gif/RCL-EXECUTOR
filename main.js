@@ -253,55 +253,31 @@ ipcMain.handle('execute-script', (event, content) => {
 
 ipcMain.handle('inject-internal', async () => {
   return new Promise((resolve) => {
-    // Search in common locations, PRIORITIZING unpacked paths
-    const possiblePaths = [
-      // 1. Check unpacked resources first (Most common for built apps)
-      path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'rcl_loader'),
-      path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
-      path.join(path.dirname(app.getPath('exe')), '..', 'Resources', 'app.asar.unpacked', 'bin', 'rcl_loader'),
-      
-      // 2. Check direct resources (if asar is disabled)
-      path.join(process.resourcesPath, 'bin', 'rcl_loader'),
-      
-      // 3. Check dev paths
-      path.join(__dirname, 'bin', 'rcl_loader'),
-      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader')
-    ];
+    // MacSploit Method: Look in Resources or Dev folder
+    const isDev = !app.isPackaged;
+    const loaderPath = isDev 
+      ? path.join(__dirname, 'bin', 'rcl_loader')
+      : path.join(process.resourcesPath, 'bin', 'rcl_loader');
 
-    let loaderPath = "";
-    for (const p of possiblePaths) {
-      // CRITICAL: Shell execution (exec) CANNOT see inside .asar archives.
-      // We must skip any path that contains 'app.asar' unless it also contains 'app.asar.unpacked'.
-      if (p.includes('app.asar') && !p.includes('app.asar.unpacked')) {
-        continue;
-      }
-      
-      if (fs.existsSync(p)) {
-        loaderPath = p;
-        break;
-      }
-    }
-
-    if (!loaderPath) {
+    if (!fs.existsSync(loaderPath)) {
       return resolve({ 
         success: false, 
-        error: 'Loader binary not found. Please run: ./src/internal/build.sh',
-        debugPath: possiblePaths[0] // Show the first path we tried
+        error: 'Engine binary missing. Please run build.sh',
+        debugPath: loaderPath
       });
     }
 
-    console.log('Using internal loader at:', loaderPath);
+    console.log('Launching Internal Engine from:', loaderPath);
     
-    // Auto-fix permissions before execution
+    // Auto-fix permissions
     try { fs.chmodSync(loaderPath, 0o755); } catch(e) {}
 
     exec(`"${loaderPath}"`, (err, stdout, stderr) => {
       if (err) {
-        console.error('Internal Loader Error:', err);
         return resolve({ 
           success: false, 
           error: stderr || err.message,
-          debugPath: loaderPath // Show the actual path that failed
+          debugPath: loaderPath
         });
       }
       resolve({ success: true, output: stdout });

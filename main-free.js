@@ -127,21 +127,38 @@ ipcMain.handle('execute-script', (event, content) => {
 
 ipcMain.handle('inject-internal', async () => {
   return new Promise((resolve) => {
-    const loaderPath = path.join(__dirname, 'bin', 'rcl_loader');
-    console.log('Running internal loader from:', loaderPath);
-    
-    // Check if loader exists
-    if (!fs.existsSync(loaderPath)) {
-      return resolve({ success: false, error: 'Internal loader binary (rcl_loader) not found. Please run build.sh.' });
+    // Search in common locations
+    const possiblePaths = [
+      path.join(__dirname, 'bin', 'rcl_loader'),
+      path.join(process.resourcesPath, 'bin', 'rcl_loader'),
+      path.join(app.getAppPath(), 'bin', 'rcl_loader')
+    ];
+
+    let loaderPath = "";
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        loaderPath = p;
+        break;
+      }
     }
 
-    // Run the loader
+    if (!loaderPath) {
+      return resolve({ 
+        success: false, 
+        error: 'Loader binary not found. Please run: ./src/internal/build.sh' 
+      });
+    }
+
+    console.log('Using internal loader at:', loaderPath);
+    
+    // Auto-fix permissions before execution
+    try { fs.chmodSync(loaderPath, 0o755); } catch(e) {}
+
     exec(`"${loaderPath}"`, (err, stdout, stderr) => {
       if (err) {
         console.error('Internal Loader Error:', err);
         return resolve({ success: false, error: stderr || err.message });
       }
-      console.log('Internal Loader Output:', stdout);
       resolve({ success: true, output: stdout });
     });
   });

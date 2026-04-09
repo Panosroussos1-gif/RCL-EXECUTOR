@@ -126,7 +126,7 @@ ipcMain.handle('execute-script', (event, content) => {
 });
 
 ipcMain.handle('inject-standalone', async () => {
-  const oneLiner = 'loadstring(game:HttpGet("http://127.0.0.1:5500/loader") or game:HttpGet("http://localhost:5500/loader"))()';
+  const oneLiner = 'local s,r=pcall(game.HttpGet,game,"http://127.0.0.1:5500/loader") if s then loadstring(r)() else warn("RCL ERR:"..tostring(r)) end';
   clipboard.writeText(oneLiner);
 
   const appleScript = `
@@ -142,22 +142,23 @@ ipcMain.handle('inject-standalone', async () => {
       end repeat
       
       if foundProcess is not "" then
-        -- Force Focus
-        set frontmost of process foundProcess to true
+        -- Focus the app directly
+        tell application foundProcess to activate
         delay 1.5
         
         -- Open Chat
         keystroke "/"
         delay 0.8
         
-        -- Paste Loader (more robust method)
-        key down command
-        keystroke "v"
-        key up command
+        -- Clear current line and Paste
+        keystroke "a" using {command down}
+        keystroke (ASCII character 8) -- backspace
+        delay 0.2
+        keystroke "v" using {command down}
         delay 0.8
         
         -- Execute
-        key code 36
+        keystroke return
         return "SUCCESS:" & foundProcess
       else
         return "ERROR:Roblox process not found"
@@ -179,11 +180,7 @@ ipcMain.handle('inject-standalone', async () => {
 });
 
 ipcMain.handle('get-loader', () => {
-  try {
-    return fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
-  } catch (err) {
-    return null;
-  }
+  return 'local s,r=pcall(game.HttpGet,game,"http://127.0.0.1:5500/loader") if s then loadstring(r)() else warn("RCL ERR:"..tostring(r)) end';
 });
 
 ipcMain.handle('save-file', async (event, { name, content }) => {

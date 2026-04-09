@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>.RCL Executor UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --primary-glow: rgba(0, 255, 136, 0.4);
+            --secondary: #00ccff;
+            --dark-bg: #0a0a0a;
+            --surface: #121212;
+            --surface-accent: #1a1a1a;
+            --text: #ffffff;
+            --text-muted: #666666;
+            --editor-bg: #0d0d0d;
+            --border: rgba(255, 255, 255, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            border: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Custom Title Bar --- */
+        .title-bar {
+            height: 35px;
+            background: #0d0d0d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 12px;
+            -webkit-app-region: drag;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .title-bar span {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 12px;
+            -webkit-app-region: no-drag;
+        }
+
+        .control-btn {
+            font-size: 12px;
+            color: #444;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .control-btn:hover { color: white; }
+        .close:hover { color: #ff4d4d; }
+
+        /* --- Main Content --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 50px;
+            background: #0d0d0d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 0;
+            gap: 25px;
+            border-right: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .sidebar i {
+            font-size: 16px;
+            color: #444;
+            cursor: pointer;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            width: 100%;
+            text-align: center;
+        }
+
+        .sidebar i:hover { color: #888; }
+        .sidebar i.active {
+            color: var(--primary);
+            text-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .sidebar i.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 0 4px 4px 0;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        /* --- File Explorer --- */
+        .file-explorer {
+            width: 180px;
+            background: #0d0d0d;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: 0.3s;
+        }
+
+        .explorer-header {
+            padding: 12px 15px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 5px 0;
+        }
+
+        .file-item {
+            padding: 8px 15px;
+            font-size: 11px;
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .file-item:hover { background: #151515; color: #fff; }
+        .file-item.active { background: #1a1a1a; color: var(--primary); }
+        .file-item i { font-size: 12px; width: 14px; }
+
+        /* --- Editor Area --- */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--editor-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-bar {
+            height: 35px;
+            background: #0d0d0d;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 2px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            font-size: 10px;
+            font-weight: 600;
+            color: #444;
+            padding: 8px 15px;
+            background: transparent;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+            border: 1px solid transparent;
+            border-bottom: none;
+        }
+
+        .tab:hover { color: #888; }
+
+        .tab.active {
+            color: var(--text);
+            background: var(--editor-bg);
+            border-color: var(--border);
+        }
+
+        .tab .close-tab {
+            font-size: 8px;
+            opacity: 0;
+            transition: 0.2s;
+        }
+
+        .tab:hover .close-tab { opacity: 0.5; }
+        .tab .close-tab:hover { opacity: 1; color: #ff4d4d; }
+
+        .editor-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .line-numbers {
+            width: 45px;
+            background: #0d0d0d;
+            color: #333;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            text-align: right;
+            padding: 20px 10px;
+            border-right: 1px solid var(--border);
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #bbb;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            padding: 20px;
+            resize: none;
+            line-height: 1.6;
+            user-select: text;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        /* --- Action Bar --- */
+        .action-bar {
+            height: 45px;
+            background: #0d0d0d;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            padding: 6px 14px;
+            font-size: 10px;
+            font-weight: 800;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary { background: var(--primary); color: #000; border: none; }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 15px var(--primary-glow); }
+        .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .btn-dark { background: #1a1a1a; color: #888; }
+        .btn-dark:hover { background: #222; color: white; border-color: #444; }
+
+        .btn-inject { background: #ffaa00; color: #000; border: none; }
+        .btn-inject:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 0 15px rgba(255, 170, 0, 0.4); }
+
+        .status-container {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-item {
+            font-size: 9px;
+            font-weight: 800;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-item i { font-size: 8px; }
+        .status-item.active { color: var(--primary); }
+        .status-item.active i { color: var(--primary); text-shadow: 0 0 5px var(--primary); }
+
+        /* --- Console --- */
+        .console {
+            height: 120px;
+            background: #050505;
+            border-top: 1px solid var(--border);
+            padding: 12px 15px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            overflow-y: auto;
+            display: none; /* Toggleable */
+        }
+
+        .console.active { display: block; }
+
+        .log { margin-bottom: 5px; color: #888; line-height: 1.4; }
+        .log .tag { font-weight: 800; margin-right: 8px; }
+
+        /* --- Overlays --- */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .overlay-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .overlay-header h2 { font-size: 20px; font-weight: 800; color: var(--primary); }
+
+        /* --- Script Hub Grid --- */
+        .hub-search {
+            width: 100%;
+            background: #151515;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #fff;
+            font-size: 12px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .hub-search:focus { border-color: var(--primary); }
+
+        .hub-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .category-chip {
+            padding: 5px 12px;
+            background: #1a1a1a;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #666;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .category-chip.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+        }
+
+        .script-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        .script-card {
+            background: #151515;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            transition: 0.3s;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .script-card:hover { 
+            border-color: var(--primary); 
+            background: #1a1a1a;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .script-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .script-card h3 { font-size: 14px; color: #fff; font-weight: 700; }
+        .script-card p { font-size: 11px; color: #555; line-height: 1.4; }
+        
+        .script-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 9px;
+            font-weight: 800;
+            color: #444;
+            text-transform: uppercase;
+        }
+
+        .script-meta span { display: flex; align-items: center; gap: 4px; }
+        .script-meta i { font-size: 8px; }
+
+        .load-btn {
+            margin-top: auto;
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- Settings List --- */
+        .settings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .setting-info h4 { font-size: 14px; margin-bottom: 4px; }
+        .setting-info p { font-size: 11px; color: #555; }
+
+        .toggle {
+            width: 40px;
+            height: 20px;
+            background: #222;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 16px; height: 16px;
+            background: #444;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle.on { background: var(--primary); }
+        .toggle.on::after { left: 22px; background: #000; }
+
+    </style>
+</head>
+<body>
+
+    <div class="title-bar">
+        <span>.RCL EXECUTOR <small style="opacity: 0.4; font-size: 8px; margin-left: 5px;">v1.0.0 PRO</small></span>
+        <div id="update-banner" style="display: none; background: var(--primary); color: black; font-size: 10px; font-weight: 800; padding: 2px 10px; border-radius: 4px; margin-left: 15px; cursor: pointer;" onclick="updateApp()">
+            UPDATE AVAILABLE! CLICK TO UPDATE
+        </div>
+        <div class="window-controls">
+            <i class="fas fa-minus control-btn" id="minimize-btn"></i>
+            <i class="fas fa-times control-btn close" id="close-btn"></i>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <i class="fas fa-file-code active" title="Editor" id="nav-editor" onclick="switchPage('editor')"></i>
+            <i class="fas fa-folder" title="Explorer" id="nav-explorer" onclick="toggleExplorer()"></i>
+            <i class="fas fa-gamepad" title="Game Info" id="nav-game" onclick="switchPage('game')"></i>
+            <i class="fas fa-th-large" title="Script Hub" id="nav-hub" onclick="switchPage('hub')"></i>
+            <i class="fas fa-cloud-download-alt" title="Cloud Scripts" id="nav-cloud" onclick="switchPage('cloud')"></i>
+            <i class="fas fa-terminal" title="Toggle Console" onclick="toggleConsole()"></i>
+            <i class="fas fa-cog" title="Settings" style="margin-top: auto;" id="nav-settings" onclick="switchPage('settings')"></i>
+        </div>
+
+        <div class="file-explorer" id="file-explorer">
+            <div class="explorer-header">
+                <span>Explorer</span>
+                <i class="fas fa-plus" style="cursor: pointer;" onclick="createNewFile()"></i>
+            </div>
+            <div class="file-list" id="file-list">
+                <div class="file-item active" onclick="openFile('Main.lua')">
+                    <i class="fab fa-lua" style="color: #00a2ff;"></i> Main.lua
+                </div>
+                <div class="file-item" onclick="openFile('Local.lua')">
+                    <i class="fab fa-lua" style="color: #00a2ff;"></i> Local.lua
+                </div>
+                <div class="file-item" onclick="openFile('Config.lua')">
+                    <i class="fas fa-cog" style="color: #888;"></i> Config.lua
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <div class="tab-bar">
+                <div class="tab active" onclick="openFile('Main.lua')">
+                    <i class="fab fa-lua" style="color: #00a2ff; font-size: 10px;"></i> 
+                    Main.lua 
+                    <i class="fas fa-times close-tab"></i>
+                </div>
+                <div class="tab" onclick="openFile('Local.lua')">
+                    <i class="fab fa-lua" style="color: #00a2ff; font-size: 10px;"></i> 
+                    Local.lua 
+                    <i class="fas fa-times close-tab"></i>
+                </div>
+                <i class="fas fa-plus" style="font-size: 10px; color: #222; margin-left: 10px; cursor: pointer;" onclick="createNewFile()"></i>
+            </div>
+
+            <div class="editor-wrapper">
+                <div class="line-numbers" id="line-numbers">
+                    1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12
+                </div>
+                <textarea id="script-editor" spellcheck="false" oninput="updateLineNumbers()">-- .RCL Executor Professional
+-- Developed by Panos
+
+local function initialize()
+    print("Initializing .RCL Engine...")
+    task.wait(0.5)
+    print("Engine Ready.")
+end
+
+initialize()</textarea>
+            </div>
+
+            <div class="console" id="output-console">
+                <div class="log"><span class="tag" style="color: var(--primary)">[SYSTEM]</span> .RCL Engine initialized. Build 2948.</div>
+            </div>
+
+            <div class="action-bar">
+                <button class="btn btn-inject" id="inject-btn">
+                    <i class="fas fa-syringe"></i> INJECT
+                </button>
+                <button class="btn btn-primary" id="execute-btn" disabled>
+                    <i class="fas fa-play"></i> EXECUTE
+                </button>
+                <button class="btn btn-dark" id="clear-btn">
+                    <i class="fas fa-eraser"></i> CLEAR
+                </button>
+                <button class="btn btn-dark" id="save-btn">
+                    <i class="fas fa-save"></i> SAVE
+                </button>
+
+                <div class="status-container">
+                    <div class="status-item" id="roblox-status">
+                        <i class="fas fa-circle"></i> ROBLOX FOUND
+                    </div>
+                    <div class="status-item" id="injection-status">
+                        <i class="fas fa-circle"></i> NOT INJECTED
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlays -->
+            <div id="game-overlay" class="overlay">
+                <div class="overlay-header">
+                    <h2>GAME INFO</h2>
+                    <i class="fas fa-times control-btn" onclick="closeOverlays()"></i>
+                </div>
+                <div style="background: #151515; border: 1px solid var(--border); border-radius: 12px; padding: 25px; display: flex; flex-direction: column; gap: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 id="game-name" style="font-size: 18px; color: #fff; margin-bottom: 5px;">NOT DETECTED</h3>
+                            <p id="game-status" style="font-size: 12px; color: #666;">Scan for an active Roblox game process.</p>
+                        </div>
+                        <button class="btn btn-primary" id="detect-game-btn" onclick="detectGame()">
+                            <i class="fas fa-search"></i> DETECT GAME
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                        <div style="background: #0d0d0d; border-radius: 8px; padding: 15px; border: 1px solid var(--border);">
+                            <span style="font-size: 10px; color: #444; font-weight: 800; text-transform: uppercase;">Place ID</span>
+                            <div id="place-id-text" style="font-family: 'JetBrains Mono'; font-size: 16px; color: var(--primary); margin-top: 5px;">-</div>
+                        </div>
+                        <div style="background: #0d0d0d; border-radius: 8px; padding: 15px; border: 1px solid var(--border);">
+                            <span style="font-size: 10px; color: #444; font-weight: 800; text-transform: uppercase;">Universe ID</span>
+                            <div id="universe-id-text" style="font-family: 'JetBrains Mono'; font-size: 16px; color: var(--secondary); margin-top: 5px;">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; font-size: 11px; color: #444; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i> This information is retrieved from your local Roblox logs.
+                </div>
+            </div>
+
+            <div id="hub-overlay" class="overlay">
+                <div class="overlay-header">
+                    <h2>SCRIPT HUB</h2>
+                    <i class="fas fa-times control-btn" onclick="closeOverlays()"></i>
+                </div>
+                <input type="text" class="hub-search" placeholder="Search for scripts (e.g. Fly, Aimbot, ESP)...">
+                <div class="hub-categories">
+                    <div class="category-chip active">ALL</div>
+                    <div class="category-chip">UNIVERSAL</div>
+                    <div class="category-chip">GAMES</div>
+                    <div class="category-chip">UTILITY</div>
+                </div>
+                <div class="script-grid">
+                    <div class="script-card" onclick="loadScript('Fly GUI', '-- Fly Script\nprint(\'Flying...\')')">
+                        <div class="script-card-header">
+                            <h3>Fly GUI</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> Panos</span>
+                            </div>
+                        </div>
+                        <p>High-speed flight utility with customizable speed and vertical stabilization.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v2.1</span>
+                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
+                    </div>
+                    
+                    <div class="script-card" onclick="loadScript('Aimbot', '-- Aimbot V2\nprint(\'Aimbot active\')')">
+                        <div class="script-card-header">
+                            <h3>Aimbot V2</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> RCL Team</span>
+                            </div>
+                        </div>
+                        <p>Silent aim with FOV circle and prediction logic for various FPS games.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v1.4</span>
+                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
+                    </div>
+
+                    <div class="script-card" onclick="loadScript('Universal ESP', '-- ESP Script\nprint(\'Showing players\')')">
+                        <div class="script-card-header">
+                            <h3>Universal ESP</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> Panos</span>
+                            </div>
+                        </div>
+                        <p>Wallhack showing boxes, names, and health for all players globally.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v3.0</span>
+                            <span><i class="fas fa-shield-alt"></i> UNDETECTED</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
+                    </div>
+
+                    <div class="script-card" onclick="loadScript('Infinite Yield', 'loadstring(game:HttpGet(\'...\'))()')">
+                        <div class="script-card-header">
+                            <h3>Infinite Yield</h3>
+                            <div class="script-meta">
+                                <span><i class="fas fa-user"></i> Edgeiy</span>
+                            </div>
+                        </div>
+                        <p>Massive admin command script with over 500 unique features and commands.</p>
+                        <div class="script-meta">
+                            <span><i class="fas fa-code-branch"></i> v5.3</span>
+                            <span><i class="fas fa-shield-alt"></i> SECURE</span>
+                        </div>
+                        <span class="load-btn"><i class="fas fa-download"></i> LOAD SCRIPT</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-overlay" class="overlay">
+                <div class="overlay-header">
+                    <h2>SETTINGS</h2>
+                    <i class="fas fa-times control-btn" onclick="closeOverlays()"></i>
+                </div>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Auto-Inject</h4>
+                            <p>Automatically attach .RCL to Roblox when the process is detected.</p>
+                        </div>
+                        <div class="toggle" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Stay on Top</h4>
+                            <p>Prevent other windows from covering the executor interface.</p>
+                        </div>
+                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Rich Presence</h4>
+                            <p>Show your currently executing script on your Discord profile.</p>
+                        </div>
+                        <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Theme Color</h4>
+                            <p>Change the primary accent color of the executor.</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #00ff88; cursor: pointer; border: 2px solid white;"></div>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #00ccff; cursor: pointer;"></div>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #ff00ff; cursor: pointer;"></div>
+                            <div style="width: 20px; height: 20px; border-radius: 50%; background: #ffaa00; cursor: pointer;"></div>
+                        </div>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <h4>Console Opacity</h4>
+                            <p>Adjust how transparent the console output appears.</p>
+                        </div>
+                        <input type="range" min="10" max="100" value="95" style="accent-color: var(--primary);">
+                    </div>
+                </div>
+                <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 10px; color: #444;">Build Version: 1.0.0 (Production)</div>
+                    <button class="btn btn-dark" style="font-size: 9px;" onclick="closeOverlays()">SAVE & RESTART</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        const editor = document.getElementById('script-editor');
+        const lineNumbers = document.getElementById('line-numbers');
+        const executeBtn = document.getElementById('execute-btn');
+        const injectBtn = document.getElementById('inject-btn');
+        const consoleEl = document.getElementById('output-console');
+        const robloxStatus = document.getElementById('roblox-status');
+        const injectionStatus = document.getElementById('injection-status');
+        const fileExplorer = document.getElementById('file-explorer');
+
+        let isInjected = false;
+
+        // Window Controls
+        document.getElementById('close-btn').onclick = () => ipcRenderer.send('close-app');
+        document.getElementById('minimize-btn').onclick = () => ipcRenderer.send('minimize-app');
+
+        // Navigation
+        async function switchPage(page) {
+            closeOverlays();
+            document.querySelectorAll('.sidebar i').forEach(i => i.classList.remove('active'));
+            
+            if (page === 'hub') {
+                document.getElementById('hub-overlay').classList.add('active');
+                document.getElementById('nav-hub').classList.add('active');
+            } else if (page === 'game') {
+                document.getElementById('game-overlay').classList.add('active');
+                document.getElementById('nav-game').classList.add('active');
+            } else if (page === 'settings') {
+                document.getElementById('settings-overlay').classList.add('active');
+                document.getElementById('nav-settings').classList.add('active');
+            } else if (page === 'editor') {
+                document.getElementById('nav-editor').classList.add('active');
+            }
+        }
+
+        async function detectGame() {
+            const btn = document.getElementById('detect-game-btn');
+            const status = document.getElementById('game-status');
+            const nameEl = document.getElementById('game-name');
+            const placeIdEl = document.getElementById('place-id-text');
+            const universeIdEl = document.getElementById('universe-id-text');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> DETECTING...';
+            status.innerText = 'Scanning logs...';
+
+            const res = await ipcRenderer.invoke('detect-game');
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> DETECT GAME';
+                
+                if (res.success) {
+                    nameEl.innerText = 'ROBLOX GAME FOUND';
+                    status.innerText = `Detected in log: ${res.logPath}`;
+                    placeIdEl.innerText = res.placeId;
+                    universeIdEl.innerText = res.universeId;
+                    addLog('SYSTEM', `Detected Game: ${res.placeId}`, '#00ff88');
+                } else {
+                    nameEl.innerText = 'NOT FOUND';
+                    status.innerText = res.error;
+                    addLog('ERROR', `Detection failed: ${res.error}`, '#ff4d4d');
+                }
+            }, 1000);
+        }
+
+        async function checkUpdates() {
+            const res = await ipcRenderer.invoke('check-update');
+            if (res.updateAvailable) {
+                const banner = document.getElementById('update-banner');
+                banner.style.display = 'block';
+                banner.innerText = `v${res.latestVersion} AVAILABLE! CLICK TO UPDATE`;
+                addLog('UPDATE', `New version available: ${res.latestVersion}`, '#00ff88');
+            }
+        }
+
+        function updateApp() {
+            const banner = document.getElementById('update-banner');
+            banner.innerText = 'UPDATING...';
+            banner.style.pointerEvents = 'none';
+            addLog('SYSTEM', 'Starting update process...', '#ffaa00');
+            ipcRenderer.send('perform-update');
+        }
+
+        function toggleExplorer() {
+            const explorer = document.getElementById('file-explorer');
+            const nav = document.getElementById('nav-explorer');
+            if (explorer.style.display === 'none' || !explorer.style.display) {
+                explorer.style.display = 'flex';
+                nav.classList.add('active');
+                refreshExplorer();
+            } else {
+                explorer.style.display = 'none';
+                nav.classList.remove('active');
+            }
+        }
+
+        async function refreshExplorer() {
+            const files = await ipcRenderer.invoke('read-workspace');
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            
+            files.forEach(file => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `<i class="fab fa-lua" style="color: #00a2ff;"></i> ${file}`;
+                item.onclick = () => openFile(file);
+                list.appendChild(item);
+            });
+        }
+
+        async function openFile(fileName) {
+            const content = await ipcRenderer.invoke('read-file', fileName);
+            if (content !== null) {
+                editor.value = content;
+                addLog('FILE', `Opened ${fileName}`, '#888');
+                
+                document.querySelectorAll('.file-item').forEach(item => {
+                    if (item.textContent.trim() === fileName) item.classList.add('active');
+                    else item.classList.remove('active');
+                });
+                
+                updateLineNumbers();
+            }
+        }
+
+        async function createNewFile() {
+            const name = prompt('Enter script name:');
+            if (name) {
+                const res = await ipcRenderer.invoke('save-file', { name, content: '-- New Script', isAutoExec: false });
+                if (res.success) {
+                    addLog('SUCCESS', `Created ${name}.lua`, '#00ff88');
+                    refreshExplorer();
+                } else {
+                    addLog('ERROR', `Failed to create file: ${res.error}`, '#ff4d4d');
+                }
+            }
+        }
+
+        // Script Hub Logic
+        function loadScript(name, content) {
+            editor.value = content;
+            addLog('HUB', `Loaded script: ${name}`, '#00ccff');
+            closeOverlays();
+            updateLineNumbers();
+        }
+
+        // Real Real-time Roblox Detection
+        async function startRobloxCheck() {
+            // Watch for real-time log updates from Roblox
+            ipcRenderer.on('roblox-log', (event, line) => {
+                // Filter and clean up Roblox log lines
+                if (line.includes('[FLog::Output]')) {
+                    const cleanLine = line.split('[FLog::Output]')[1].trim();
+                    addLog('ROBLOX', cleanLine, '#ffffff');
+                } else if (line.includes('Error:')) {
+                    addLog('ERROR', line, '#ff4d4d');
+                } else if (line.includes('Warn:')) {
+                    addLog('WARN', line, '#ffaa00');
+                }
+            });
+
+            setInterval(async () => {
+                const isRunning = await ipcRenderer.invoke('check-roblox');
+                if (isRunning) {
+                    robloxStatus.classList.add('active');
+                    robloxStatus.innerHTML = '<i class="fas fa-circle"></i> ROBLOX FOUND';
+                } else {
+                    robloxStatus.classList.remove('active');
+                    robloxStatus.innerHTML = '<i class="fas fa-circle"></i> ROBLOX NOT FOUND';
+                    // Reset injection if roblox closed
+                    if (isInjected) {
+                        isInjected = false;
+                        injectionStatus.classList.remove('active');
+                        injectionStatus.innerHTML = '<i class="fas fa-circle"></i> NOT INJECTED';
+                        executeBtn.disabled = true;
+                        injectBtn.disabled = false;
+                        injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+                        injectBtn.style.background = '';
+                        injectBtn.style.color = '';
+                        addLog('SYSTEM', 'Roblox closed. Disconnected.', '#ff4d4d');
+                    }
+                }
+            }, 3000);
+        }
+
+        // Save Function
+        document.getElementById('save-btn').onclick = async () => {
+            const name = prompt('Save as (filename):', 'Script.lua');
+            if (name) {
+                const res = await ipcRenderer.invoke('save-file', { 
+                    name, 
+                    content: editor.value, 
+                    isAutoExec: false 
+                });
+                if (res.success) {
+                    addLog('SUCCESS', `Saved to ${res.path}`, '#00ff88');
+                    refreshExplorer();
+                } else {
+                    addLog('ERROR', res.error, '#ff4d4d');
+                }
+            }
+        };
+
+        // Execution Logic (AutoExec Support)
+        executeBtn.onclick = async () => {
+            if (!isInjected) return;
+            
+            // For a "real" experience, we'll save it to the autoexec folder
+            // Real executors often have an "autoexec" folder they watch.
+            const res = await ipcRenderer.invoke('save-file', { 
+                name: 'executed_script', 
+                content: editor.value, 
+                isAutoExec: true 
+            });
+            
+            if (res.success) {
+                addLog('EXECUTE', 'Script sent to AutoExec.', '#00ff88');
+            } else {
+                addLog('ERROR', 'Execution failed to write buffer.', '#ff4d4d');
+            }
+        };
+
+        function closeOverlays() {
+            document.querySelectorAll('.overlay').forEach(o => o.classList.remove('active'));
+            document.getElementById('nav-editor').classList.add('active');
+        }
+
+        function toggleConsole() {
+            consoleEl.classList.toggle('active');
+        }
+
+        // Line Numbers & Scroll Sync
+        function updateLineNumbers() {
+            const lines = editor.value.split('\n').length;
+            lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('<br>');
+        }
+
+        editor.onscroll = () => {
+            lineNumbers.scrollTop = editor.scrollTop;
+        };
+
+        // Simulated Injection
+        injectBtn.onclick = () => {
+            if (isInjected) return;
+            injectBtn.disabled = true;
+            addLog('SYSTEM', 'Attaching to process...', '#ffaa00');
+            
+            setTimeout(() => {
+                addLog('SUCCESS', 'Successfully attached to Roblox.', '#00ff88');
+                isInjected = true;
+                injectionStatus.classList.add('active');
+                injectionStatus.innerHTML = '<i class="fas fa-circle"></i> INJECTED';
+                executeBtn.disabled = false;
+                injectBtn.innerHTML = '<i class="fas fa-check"></i> INJECTED';
+                injectBtn.style.background = '#1a1a1a';
+                injectBtn.style.color = '#444';
+                robloxStatus.classList.add('active');
+            }, 1500);
+        };
+
+        document.getElementById('clear-btn').onclick = () => {
+            editor.value = '';
+            updateLineNumbers();
+        };
+
+        function addLog(tag, msg, color) {
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const log = document.createElement('div');
+            log.className = 'log';
+            log.innerHTML = `<span style="color: #333; margin-right: 8px;">[${time}]</span><span class="tag" style="color: ${color}">[${tag}]</span> ${msg}`;
+            consoleEl.appendChild(log);
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+            if (!consoleEl.classList.contains('active')) toggleConsole();
+        }
+
+        // Init
+        updateLineNumbers();
+        startRobloxCheck();
+        checkUpdates();
+    </script>
+</body>
+</html>

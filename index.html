@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>.RCL Executor | Next Generation Roblox Scripting</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --primary-glow: rgba(0, 255, 136, 0.4);
+            --secondary: #00ccff;
+            --dark-bg: #0a0a0a;
+            --surface: #141414;
+            --surface-accent: #1e1e1e;
+            --text: #ffffff;
+            --text-muted: #888888;
+            --error: #ff4d4d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--dark-bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* --- Custom Scrollbar --- */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--dark-bg); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glow { 0%, 100% { text-shadow: 0 0 10px var(--primary-glow); } 50% { text-shadow: 0 0 25px var(--primary); } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        .reveal { opacity: 0; }
+        .reveal.active { animation: fadeIn 0.8s forwards; }
+
+        /* --- Intro Animation --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--dark-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 1s ease-out;
+        }
+
+        .intro-text {
+            font-size: clamp(24px, 5vw, 48px);
+            font-weight: 800;
+            letter-spacing: -1px;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease;
+        }
+
+        .intro-text.visible { opacity: 1; transform: scale(1); }
+
+        .rcl-highlight {
+            color: var(--primary);
+            position: relative;
+            padding: 0 10px;
+        }
+
+        .rcl-highlight::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 0; width: 0; height: 3px;
+            background: var(--primary);
+            transition: width 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .intro-text.highlighted .rcl-highlight::after { width: 100%; }
+        .intro-text.highlighted .rcl-highlight { animation: glow 2s infinite; }
+
+        /* --- Navigation --- */
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            position: fixed;
+            width: 100%; top: 0; z-index: 1000;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo span { color: var(--primary); }
+
+        .nav-links { display: flex; gap: 30px; }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .nav-links a:hover { color: var(--primary); }
+
+        /* --- Hero Section --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0 5%;
+            background: radial-gradient(circle at center, rgba(0, 255, 136, 0.05) 0%, transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: clamp(40px, 8vw, 84px);
+            font-weight: 900;
+            letter-spacing: -2px;
+            margin-bottom: 20px;
+        }
+
+        .hero p {
+            font-size: 18px;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 40px;
+        }
+
+        .btn-main {
+            padding: 16px 40px;
+            background: var(--primary);
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 50px;
+            font-weight: 800;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: 0.3s;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .btn-main:hover { transform: translateY(-3px); box-shadow: 0 0 35px var(--primary); }
+
+        /* --- Sections --- */
+        .section { padding: 100px 8%; }
+
+        .section-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        .section-title span { color: var(--primary); }
+
+        /* --- Features/Terms --- */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .card:hover { border-color: var(--primary); background: var(--surface-accent); }
+
+        .card i { font-size: 32px; color: var(--primary); margin-bottom: 20px; }
+        .card h3 { font-size: 20px; margin-bottom: 15px; }
+        .card p { color: var(--text-muted); font-size: 15px; }
+
+        /* --- Executor Preview Mockup --- */
+        .preview-section {
+            background: radial-gradient(circle at top right, rgba(0, 255, 136, 0.03) 0%, transparent 50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .executor-mockup {
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 1.6 / 1;
+            background: #0a0a0a;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5), 0 0 100px rgba(0, 255, 136, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            transform: perspective(1000px) rotateX(2deg);
+            transition: 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .executor-mockup:hover {
+            transform: perspective(1000px) rotateX(0deg) scale(1.02);
+            border-color: var(--primary);
+        }
+
+        .m-titlebar {
+            height: 35px;
+            background: #0d0d0d;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            justify-content: space-between;
+        }
+
+        .m-title { font-size: 10px; font-weight: 800; color: var(--primary); letter-spacing: 1px; }
+        .m-update-tag { 
+            background: var(--primary); color: #000; font-size: 8px; font-weight: 900; 
+            padding: 2px 8px; border-radius: 4px; margin-left: 10px;
+        }
+
+        .m-body { flex: 1; display: flex; }
+
+        .m-sidebar {
+            width: 50px;
+            background: #0d0d0d;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 25px;
+        }
+
+        .m-sidebar i { font-size: 16px; color: #333; }
+        .m-sidebar i.active { color: var(--primary); }
+
+        .m-content { flex: 1; background: #0d0d0d; display: flex; flex-direction: column; }
+        
+        .m-tabs { 
+            height: 35px; background: #0d0d0d; border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; padding: 0 10px; gap: 5px;
+        }
+
+        .m-tab { 
+            background: #141414; border: 1px solid rgba(255,255,255,0.05); border-bottom: none;
+            padding: 5px 12px; border-radius: 4px 4px 0 0; font-size: 10px; color: #888;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .m-tab.active { background: #0d0d0d; color: #fff; }
+
+        .m-editor { flex: 1; padding: 20px; font-family: 'JetBrains Mono'; font-size: 12px; line-height: 1.6; }
+        .m-line { color: #444; margin-bottom: 2px; }
+        .m-code { color: #888; margin-left: 20px; }
+        .m-keyword { color: #ff79c6; }
+        .m-string { color: #f1fa8c; }
+        .m-func { color: #50fa7b; }
+
+        .m-actionbar {
+            height: 45px; background: #0d0d0d; border-top: 1px solid rgba(255,255,255,0.05);
+            display: flex; align-items: center; padding: 0 15px; gap: 10px;
+        }
+
+        .m-btn { 
+            padding: 6px 12px; font-size: 9px; font-weight: 800; border-radius: 4px; 
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .m-btn-p { background: var(--primary); color: #000; }
+        .m-btn-d { background: #1a1a1a; color: #666; }
+
+        .m-status { margin-left: auto; font-size: 9px; color: var(--primary); font-weight: 800; display: flex; align-items: center; gap: 5px; }
+        .m-status i { font-size: 7px; }
+
+        /* --- Downloads --- */
+        .release-section {
+            background: var(--surface);
+            padding: 80px 40px;
+            border-radius: 32px;
+            text-align: center;
+            border: 1px solid var(--primary-glow);
+            margin: 50px 0;
+        }
+
+        .release-date {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 48px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+
+        /* --- Pricing --- */
+        .pricing-grid {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .price-card {
+            background: var(--surface);
+            padding: 50px;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+            transition: 0.4s;
+        }
+
+        .price-card.premium { border: 2px solid var(--primary); transform: scale(1.05); }
+
+        .price-card h2 { font-size: 24px; margin-bottom: 10px; }
+        .price-header { font-size: 48px; font-weight: 800; margin-bottom: 30px; }
+        .price-header span { font-size: 18px; color: var(--text-muted); }
+
+        .features-list { list-style: none; margin-bottom: 40px; }
+        .features-list li { margin-bottom: 15px; font-size: 15px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; }
+        .features-list li i { color: var(--primary); }
+        .features-list li.not-available { color: #555; }
+        .features-list li.not-available i { color: var(--error); }
+
+        .security-badge {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .badge-unsafe { background: rgba(255, 77, 77, 0.1); color: var(--error); border: 1px solid var(--error); }
+        .badge-safe { background: rgba(0, 255, 136, 0.1); color: var(--primary); border: 1px solid var(--primary); }
+
+        /* --- Footer --- */
+        footer {
+            padding: 80px 8% 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .footer-logo { font-size: 24px; font-weight: 900; margin-bottom: 20px; }
+        .footer-logo span { color: var(--primary); }
+
+        .copyright { color: var(--text-muted); font-size: 14px; }
+
+        /* --- Modal --- */
+        #modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-card {
+            background: var(--surface);
+            padding: 40px;
+            border-radius: 32px;
+            border: 2px solid var(--primary);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.2);
+        }
+
+        #modal-overlay.active .modal-card { transform: scale(1); }
+
+        .modal-card h2 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+
+        .modal-card p {
+            font-size: 18px;
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .highlight-more {
+            color: var(--primary);
+            font-weight: 800;
+            text-decoration: underline;
+            padding: 0 5px;
+            background: rgba(0, 255, 136, 0.1);
+            border-radius: 4px;
+        }
+
+        .close-modal {
+            margin-top: 30px;
+            padding: 12px 30px;
+            background: var(--primary);
+            color: var(--dark-bg);
+            border: none;
+            border-radius: 50px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close-modal:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--primary-glow); }
+
+        /* --- Payment Form --- */
+        .payment-form {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
+
+        .payment-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 48px; }
+            .pricing-grid { flex-direction: column; align-items: center; }
+            .price-card.premium { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="intro-overlay">
+        <div class="intro-text" id="intro-msg">
+            Introducing <span class="rcl-highlight">.RCL</span> executor
+        </div>
+    </div>
+
+    <!-- Release Modal -->
+    <div id="modal-overlay">
+        <div class="modal-card">
+            <i class="fas fa-info-circle" style="font-size: 40px; color: var(--primary); margin-bottom: 20px;"></i>
+            <h2>System Status</h2>
+            <p>RCL is not available yet. We are expecting a release at 15 april or may take <span class="highlight-more">more</span>.</p>
+            <button class="close-modal" onclick="closeModal()">Acknowledge</button>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); display: none; justify-content: center; align-items: center; z-index: 10001; opacity: 0; transition: opacity 0.3s ease;">
+        <div class="modal-card" style="border-color: var(--secondary); box-shadow: 0 0 50px rgba(0, 204, 255, 0.2); max-width: 450px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="color: var(--secondary); margin: 0; font-size: 24px; font-weight: 800;">Get Unlimited</h2>
+                <button onclick="closePaymentModal()" style="background: none; border: none; color: #444; cursor: pointer; font-size: 20px; transition: 0.2s;"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <p style="color: #888; font-size: 14px; margin-bottom: 25px;">Choose your preferred payment method to unlock the <b>Unlimited Edition</b> of .RCL Executor.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- PayPal -->
+                <a href="https://paypal.me/YOUR_USERNAME/10" target="_blank" class="btn-main" style="background: #0070ba; color: white; display: flex; align-items: center; justify-content: center; gap: 12px; text-decoration: none; padding: 14px; box-shadow: 0 4px 15px rgba(0, 112, 186, 0.2);">
+                    <i class="fab fa-paypal"></i> Pay with PayPal
+                </a>
+
+                <!-- Stripe / Card -->
+                <a href="YOUR_STRIPE_PAYMENT_LINK" target="_blank" class="btn-main" style="background: #635bff; color: white; display: flex; align-items: center; justify-content: center; gap: 12px; text-decoration: none; padding: 14px; box-shadow: 0 4px 15px rgba(99, 91, 255, 0.2);">
+                    <i class="fas fa-credit-card"></i> Credit / Debit Card
+                </a>
+
+                <!-- Crypto Toggle -->
+                <button onclick="toggleCrypto()" class="btn-main" style="background: #1a1a1a; color: #888; border: 1px solid #333; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px;">
+                    <i class="fab fa-bitcoin"></i> Pay with Crypto
+                </button>
+
+                <!-- Crypto Info (Hidden by default) -->
+                <div id="crypto-info" style="display: none; background: #0a0a0a; border: 1px solid #333; border-radius: 12px; padding: 15px; margin-top: 5px;">
+                    <div style="margin-bottom: 12px;">
+                        <label style="font-size: 10px; color: #444; font-weight: 800; text-transform: uppercase;">BTC Address</label>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 11px; color: #fff; word-break: break-all; background: #111; padding: 8px; border-radius: 4px; margin-top: 4px;">YOUR_BTC_ADDRESS</div>
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; color: #444; font-weight: 800; text-transform: uppercase;">ETH / LTC Address</label>
+                        <div style="font-family: 'JetBrains Mono'; font-size: 11px; color: #fff; word-break: break-all; background: #111; padding: 8px; border-radius: 4px; margin-top: 4px;">YOUR_ETH_ADDRESS</div>
+                    </div>
+                    <p style="font-size: 10px; color: #444; margin-top: 10px; text-align: center;">Send exactly €10 and DM Panos on Discord.</p>
+                </div>
+            </div>
+
+            <p style="font-size: 11px; color: #444; margin-top: 25px; text-align: center;">After payment, you will receive your license key via email.</p>
+        </div>
+    </div>
+
+    <nav>
+        <a href="#" class="logo">.RCL<span>_</span></a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#release">Release</a>
+            <a href="#pricing">Pricing</a>
+        </div>
+        <button onclick="showModal()" class="btn-main" style="padding: 10px 25px; font-size: 13px;">Get Started</button>
+    </nav>
+
+    <!-- Global Status Banner -->
+    <div style="margin-top: 80px; padding: 15px 8%; background: rgba(255, 170, 0, 0.1); border-bottom: 1px solid rgba(255, 170, 0, 0.2); display: flex; flex-direction: column; gap: 8px; text-align: center;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px; color: #ffaa00; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+            <i class="fas fa-exclamation-triangle"></i> PROJECT STATUS & WARNINGS
+        </div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px;">
+            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">macOS:</b> Currently in testing. Injection and execution are disabled.</p>
+            <p style="font-size: 13px; color: #bbb;"><b style="color: #fff;">Windows:</b> Payment systems and license codes are still under development.</p>
+        </div>
+    </div>
+
+    <header class="hero reveal">
+        <h1>Powerful. Fast.<br><span>Undetectable.</span></h1>
+        <p>Experience the next generation of Roblox script execution with .RCL. Built for speed, security, and ultimate power.</p>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+            <a href="downloads/RCL-Executor-Mac.dmg" download class="btn-main" style="display: flex; align-items: center; gap: 10px; background: white; color: black; box-shadow: 0 0 20px rgba(255,255,255,0.2); text-decoration: none;">
+                <i class="fab fa-apple"></i> Download for Free (Mac)
+            </a>
+            <a href="downloads/RCL-Executor-Windows.exe" download class="btn-main" style="display: flex; align-items: center; gap: 10px; background: #00a4ef; color: white; box-shadow: 0 0 20px rgba(0, 164, 239, 0.3); text-decoration: none;">
+                <i class="fab fa-windows"></i> Download for Windows
+            </a>
+        </div>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 25px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <button class="btn-main" style="display: flex; align-items: center; gap: 10px; background: #1a1a1a; color: #444; border: 1px solid #333; cursor: not-allowed; opacity: 0.8; padding: 12px 25px; font-size: 14px;">
+                    <i class="fab fa-apple"></i> iOS Version
+                </button>
+                <span style="font-size: 10px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Available May 16</span>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <button class="btn-main" style="display: flex; align-items: center; gap: 10px; background: #1a1a1a; color: #444; border: 1px solid #333; cursor: not-allowed; opacity: 0.8; padding: 12px 25px; font-size: 14px;">
+                    <i class="fab fa-android"></i> Android Version
+                </button>
+                <span style="font-size: 10px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Available May 16</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Preview -->
+    <section class="section preview-section reveal">
+        <h2 class="section-title">Professional <span>Interface</span></h2>
+        <div class="executor-mockup">
+            <div class="m-titlebar">
+                <div style="display: flex; align-items: center;">
+                    <span class="m-title">.RCL EXECUTOR PRO</span>
+                    <span class="m-update-tag">v1.1.0 AVAILABLE</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #333;"></div>
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #333;"></div>
+                </div>
+            </div>
+            <div class="m-body">
+                <div class="m-sidebar">
+                    <i class="fas fa-file-code active"></i>
+                    <i class="fas fa-folder"></i>
+                    <i class="fas fa-gamepad"></i>
+                    <i class="fas fa-th-large"></i>
+                    <i class="fas fa-terminal"></i>
+                    <i class="fas fa-cog" style="margin-top: auto;"></i>
+                </div>
+                <div class="m-content">
+                    <div class="m-tabs">
+                        <div class="m-tab active">Main.lua</div>
+                        <div class="m-tab">Local.lua</div>
+                        <i class="fas fa-plus" style="font-size: 8px; color: #222; margin-left: 5px;"></i>
+                    </div>
+                    <div class="m-editor">
+                        <div class="m-line">1  <span class="m-keyword">local</span> <span class="m-func">function</span> <span class="m-func">initialize</span>()</div>
+                        <div class="m-line">2  <span class="m-code"><span class="m-func">print</span>(<span class="m-string">"Initializing .RCL..."</span>)</span></div>
+                        <div class="m-line">3  <span class="m-code"><span class="m-keyword">task.wait</span>(0.5)</span></div>
+                        <div class="m-line">4  <span class="m-code"><span class="m-func">print</span>(<span class="m-string">"Engine Ready."</span>)</span></div>
+                        <div class="m-line">5  <span class="m-keyword">end</span></div>
+                        <div class="m-line">6</div>
+                        <div class="m-line">7  <span class="m-func">initialize</span>()</div>
+                    </div>
+                    <div class="m-actionbar">
+                        <div class="m-btn m-btn-p" style="background: #ffaa00;">Inject</div>
+                        <div class="m-btn m-btn-p">Execute</div>
+                        <div class="m-btn m-btn-d">Clear</div>
+                        <div class="m-btn m-btn-d">Save</div>
+                        <div class="m-status"><i class="fas fa-circle"></i> ROBLOX FOUND</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section reveal" id="features">
+        <h2 class="section-title">Why choose <span>.RCL</span>?</h2>
+        <div class="grid">
+            <div class="card">
+                <i class="fas fa-bolt"></i>
+                <h3>Instant Execution</h3>
+                <p>No more waiting. Our engine executes complex scripts in milliseconds with near-zero latency.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Bypass Any Anti-Cheat</h3>
+                <p>Stay under the radar. .RCL uses advanced kernel-level techniques to remain undetectable by Hyperion and other anti-cheats.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-code"></i>
+                <h3>Full Luau Support</h3>
+                <p>Complete compatibility with the latest Luau updates. If you can write it, .RCL can run it.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="section reveal" id="release">
+        <div class="release-section">
+            <h2 style="font-size: 24px; margin-bottom: 10px;">The Future Arrives Soon</h2>
+            <p style="color: var(--text-muted);">Join the countdown to the official launch of .RCL version 1.0</p>
+            <div class="release-date" id="countdown">APRIL 15, 2026</div>
+            <p style="font-size: 14px; font-weight: 700; color: var(--primary);">BETA TESTING IN PROGRESS</p>
+        </div>
+    </section>
+
+    <section class="section reveal" id="pricing">
+        <h2 class="section-title">Simple <span>Pricing</span></h2>
+        <div class="pricing-grid">
+            <div class="price-card">
+                <div class="security-badge badge-unsafe">Not Secure</div>
+                <h2>Starter</h2>
+                <div class="price-header">€0<span>/forever</span></div>
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> All Available Features</li>
+                    <li><i class="fas fa-check"></i> Basic Luau Support</li>
+                    <li class="not-available"><i class="fas fa-times"></i> Advanced Security</li>
+                    <li class="not-available"><i class="fas fa-times"></i> HWID Spoofer</li>
+                    <li class="not-available"><i class="fas fa-times"></i> Priority Support</li>
+                </ul>
+                <div style="display: flex; gap: 10px;">
+                    <a href="downloads/RCL-Executor-Mac.dmg" download class="btn-main" style="background: transparent; border: 1px solid var(--primary); color: var(--primary); display: block; flex: 1; text-align: center; text-decoration: none; font-size: 10px; padding: 10px 5px;">Download Mac</a>
+                    <a href="downloads/RCL-Executor-Windows.exe" download class="btn-main" style="background: transparent; border: 1px solid var(--secondary); color: var(--secondary); display: block; flex: 1; text-align: center; text-decoration: none; font-size: 10px; padding: 10px 5px;">Download Win</a>
+                </div>
+            </div>
+
+            <div class="price-card premium">
+                <div class="security-badge badge-safe">Maximum Security</div>
+                <h2>Unlimited</h2>
+                <div class="price-header">€10<span>/one-time</span></div>
+                <ul class="features-list">
+                    <li><i class="fas fa-check"></i> All Features Unlocked</li>
+                    <li><i class="fas fa-check"></i> Kernel-Level Injection</li>
+                    <li><i class="fas fa-check"></i> Fully Undetectable</li>
+                    <li><i class="fas fa-check"></i> Integrated HWID Spoofer</li>
+                    <li><i class="fas fa-check"></i> 24/7 Priority Support</li>
+                </ul>
+                <button onclick="showPaymentModal()" class="btn-main" style="display: block; width: 100%; text-align: center;">Get Unlimited</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="section reveal" id="terms">
+        <div class="card" style="max-width: 800px; margin: 0 auto; text-align: center;">
+            <h2 style="margin-bottom: 20px;">Terms & Conditions</h2>
+            <p style="margin-bottom: 15px;">By using .RCL, you agree that you are responsible for any actions taken on your account.</p>
+            <p style="font-size: 13px; opacity: 0.6;">We do not encourage cheating in competitive environments. Use for educational and testing purposes only.</p>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-logo">.RCL<span>_</span></div>
+        <p style="margin-bottom: 20px; color: var(--text-muted);">The ultimate scripting utility for Roblox.</p>
+        <p class="copyright">&copy; 2026 .RCL Project. Developed by Panos.</p>
+    </footer>
+
+    <script>
+        // Modal Logic
+        function showModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-overlay');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        // Payment Modal Logic
+        function showPaymentModal() {
+            const modal = document.getElementById('payment-overlay');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.style.opacity = '1', 10);
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('payment-overlay');
+            modal.style.opacity = '0';
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function toggleCrypto() {
+            const info = document.getElementById('crypto-info');
+            if (info.style.display === 'none' || !info.style.display) {
+                info.style.display = 'block';
+            } else {
+                info.style.display = 'none';
+            }
+        }
+
+        function processPayment() {
+            // Close payment modal and show release modal
+            closePaymentModal();
+            setTimeout(() => {
+                showModal();
+            }, 400);
+        }
+
+        // Intro Animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const introMsg = document.getElementById('intro-msg');
+            const introOverlay = document.getElementById('intro-overlay');
+
+            // Step 1: Fade in text
+            setTimeout(() => {
+                introMsg.classList.add('visible');
+            }, 500);
+
+            // Step 2: Highlight RCL
+            setTimeout(() => {
+                introMsg.classList.add('highlighted');
+            }, 1500);
+
+            // Step 3: Fade out overlay
+            setTimeout(() => {
+                introOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    introOverlay.style.display = 'none';
+                    // Trigger scroll animations after intro
+                    revealOnScroll();
+                }, 1000);
+            }, 3500);
+        });
+
+        // Scroll Animations
+        function revealOnScroll() {
+            const reveals = document.querySelectorAll('.reveal');
+            reveals.forEach(el => {
+                const windowHeight = window.innerHeight;
+                const elementTop = el.getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < windowHeight - elementVisible) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', revealOnScroll);
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "rcl-executor",
+  "version": "1.0.0",
+  "description": "Next generation Roblox scripting utility.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "build": {
+    "appId": "com.rcl.executor",
+    "productName": "RCL Executor",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        "zip",
+        "dmg"
+      ],
+      "icon": "icon.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "files": [
+      "main.js",
+      "app.html",
+      "package.json",
+      "node_modules/**/*",
+      "**/*"
+    ],
+    "asar": true
+  },
+  "author": "Panos",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

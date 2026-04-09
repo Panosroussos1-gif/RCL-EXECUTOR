@@ -1037,7 +1037,7 @@ initialize()</textarea>
                 addLog('SUCCESS', 'Internal loader launched. Roblox starting...', '#00ff88');
             } else {
                 addLog('ERROR', `Internal injection failed: ${res.error || 'Unknown error'}`, '#ff4d4d');
-                alert(`Internal Injection failed.\n\nError: ${res.error || 'Unknown error'}\n\nTips:\n1. Make sure Roblox is OPEN and in a game.\n2. Ensure you have built the loader with build.sh.`);
+                alert(`Internal Injection failed.\n\nError: ${res.error || 'Unknown error'}\n\nDEBUG PATH: ${res.debugPath || 'N/A'}\n\nTips:\n1. Make sure Roblox is OPEN and in a game.\n2. Ensure you have built the loader with build.sh.`);
             }
         };
 

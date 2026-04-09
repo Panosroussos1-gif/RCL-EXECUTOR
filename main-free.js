@@ -153,16 +153,19 @@ ipcMain.handle('execute-script', (event, content) => {
 
 ipcMain.handle('inject-internal', async () => {
   return new Promise((resolve) => {
-    // Search in common locations
+    // Search in common locations, PRIORITIZING unpacked paths
     const possiblePaths = [
-      path.join(__dirname, 'bin', 'rcl_loader'),
-      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
-      path.join(process.resourcesPath, 'bin', 'rcl_loader'),
+      // 1. Check unpacked resources first (Most common for built apps)
       path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'rcl_loader'),
-      path.join(app.getAppPath(), 'bin', 'rcl_loader'),
       path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
-      // Ultimate Dynamic Path: Find loader relative to the current running executable
-      path.join(path.dirname(app.getPath('exe')), '..', 'Resources', 'app.asar.unpacked', 'bin', 'rcl_loader')
+      path.join(path.dirname(app.getPath('exe')), '..', 'Resources', 'app.asar.unpacked', 'bin', 'rcl_loader'),
+      
+      // 2. Check direct resources (if asar is disabled)
+      path.join(process.resourcesPath, 'bin', 'rcl_loader'),
+      
+      // 3. Check dev paths
+      path.join(__dirname, 'bin', 'rcl_loader'),
+      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader')
     ];
 
     let loaderPath = "";
@@ -176,7 +179,8 @@ ipcMain.handle('inject-internal', async () => {
     if (!loaderPath) {
       return resolve({ 
         success: false, 
-        error: 'Loader binary not found. Please run: ./src/internal/build.sh' 
+        error: 'Loader binary not found. Please run: ./src/internal/build.sh',
+        debugPath: possiblePaths[0]
       });
     }
 
@@ -188,7 +192,11 @@ ipcMain.handle('inject-internal', async () => {
     exec(`"${loaderPath}"`, (err, stdout, stderr) => {
       if (err) {
         console.error('Internal Loader Error:', err);
-        return resolve({ success: false, error: stderr || err.message });
+        return resolve({ 
+          success: false, 
+          error: stderr || err.message,
+          debugPath: loaderPath
+        });
       }
       resolve({ success: true, output: stdout });
     });

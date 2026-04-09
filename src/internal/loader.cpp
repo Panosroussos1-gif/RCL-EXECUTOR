@@ -11,8 +11,11 @@ extern char **environ;
 
 // Function to find the PID of a running process by name
 pid_t find_pid_by_name(const std::string& name) {
-    FILE* pipe = popen(("pgrep -x " + name).c_str(), "r");
+    // Look for processes that are actually running and not just launchers
+    std::string cmd = "ps -A | grep -i " + name + " | grep -v grep | awk '{print $1}'";
+    FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) return 0;
+    
     char buffer[128];
     pid_t pid = 0;
     if (fgets(buffer, 128, pipe) != NULL) {
@@ -32,12 +35,12 @@ int main(int argc, char *argv[]) {
     std::cout << "------------------------------------------" << std::endl;
 
     // 1. Find the LIVE Roblox process
-    std::string process_name = "RobloxPlayer";
-    pid_t pid = find_pid_by_name(process_name);
+    // We search for "RobloxPlayer" which is the actual engine process
+    pid_t pid = find_pid_by_name("RobloxPlayer");
     
     if (pid == 0) {
-        process_name = "RobloxPlayerBeta";
-        pid = find_pid_by_name(process_name);
+        // Fallback to "Roblox" if the name is different
+        pid = find_pid_by_name("Roblox");
     }
 
     if (pid == 0) {
@@ -55,7 +58,6 @@ int main(int argc, char *argv[]) {
     }
     std::string dylib_path = std::string(current_path) + "/bin/rcl_internal.dylib";
     
-    // Check if dylib exists
     if (access(dylib_path.c_str(), F_OK) == -1) {
         std::cerr << "ERROR: Internal Engine (dylib) not found at: " << dylib_path << std::endl;
         return 1;
@@ -64,11 +66,10 @@ int main(int argc, char *argv[]) {
     // 3. Injection via lldb
     std::cout << "[STEP 2] Injecting dylib into memory..." << std::endl;
     
-    // Use a more verbose lldb command to see what's happening
-    std::string lldb_cmd = "lldb -p " + std::to_string(pid) + " --batch " +
-                          "-o 'process interrupt' " +
+    // Simplified and more direct lldb command
+    // We use --attach-pid directly and run the expression without manual interrupt
+    std::string lldb_cmd = "lldb --attach-pid " + std::to_string(pid) + " --batch " +
                           "-o 'expression (void*)dlopen(\"" + dylib_path + "\", 10)' " +
-                          "-o 'process continue' " +
                           "-o 'detach' 2>&1";
     
     FILE* lldb_pipe = popen(lldb_cmd.c_str(), "r");
@@ -82,10 +83,13 @@ int main(int argc, char *argv[]) {
     while (fgets(lldb_buffer, 512, lldb_pipe) != NULL) {
         std::string line(lldb_buffer);
         std::cout << "  [LLDB] " << line;
+        
+        // Check for success markers
         if (line.find("0x") != std::string::npos && line.find("$") != std::string::npos) {
-            success = true; // dlopen returned a handle
+            success = true; 
         }
         if (line.find("error:") != std::string::npos) {
+            // Some errors are non-fatal, but we log them
             std::cerr << "  [LLDB ERROR] " << line;
         }
     }
@@ -97,8 +101,8 @@ int main(int argc, char *argv[]) {
         std::cout << "------------------------------------------" << std::endl;
     } else {
         std::cerr << "------------------------------------------" << std::endl;
-        std::cerr << "[ERROR] Injection failed. Check the LLDB logs above." << std::endl;
-        std::cerr << "HINT: You may need to run 'sudo DevToolsSecurity --enable' in your terminal." << std::endl;
+        std::cerr << "[ERROR] Injection failed. Roblox might be blocking the debugger." << std::endl;
+        std::cerr << "FIX: Run 'sudo DevToolsSecurity --enable' in your terminal." << std::endl;
         std::cerr << "------------------------------------------" << std::endl;
         return 1;
     }

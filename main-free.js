@@ -172,15 +172,33 @@ ipcMain.handle('inject-internal', async () => {
     // Auto-fix permissions
     try { fs.chmodSync(loaderPath, 0o755); } catch(e) {}
 
-    exec(`"${loaderPath}"`, (err, stdout, stderr) => {
-      if (err) {
-        return resolve({ 
-          success: false, 
-          error: stderr || err.message,
-          debugPath: loaderPath
-        });
+    // Use spawn instead of exec to see real-time output and prevent hanging
+    const { spawn } = require('child_process');
+    const child = spawn(loaderPath);
+
+    let output = '';
+    let errorOutput = '';
+
+    child.stdout.on('data', (data) => {
+      const msg = data.toString();
+      output += msg;
+      console.log('[Loader]:', msg);
+      if (win) win.webContents.send('server-log', msg);
+    });
+
+    child.stderr.on('data', (data) => {
+      const msg = data.toString();
+      errorOutput += msg;
+      console.error('[Loader Error]:', msg);
+      if (win) win.webContents.send('server-log', `ERROR: ${msg}`);
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ success: true, output });
+      } else {
+        resolve({ success: false, error: errorOutput || `Loader exited with code ${code}`, debugPath: loaderPath });
       }
-      resolve({ success: true, output: stdout });
     });
   });
 });

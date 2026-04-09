@@ -84,12 +84,11 @@ int main(int argc, char *argv[]) {
     
     if (status == 0) {
         std::cout << "[SUCCESS] Internal Injection Active!" << std::endl;
-        int wait_status;
-        waitpid(pid, &wait_status, 0);
+        // Don't wait for Roblox to close, just exit so the app knows we're done
+        return 0;
     } else {
         std::cerr << "[ERROR] Failed to launch Roblox." << std::endl;
+        return 1;
     }
-    
-    return 0;
 }
 

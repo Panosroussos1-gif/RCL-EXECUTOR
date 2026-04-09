@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@800&family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00ff88;
+            --bg: #050505;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            -webkit-app-region: drag;
+        }
+        .container {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            font-size: 80px;
+            font-weight: 900;
+            color: white;
+            letter-spacing: -5px;
+        }
+        #letter-r {
+            opacity: 0;
+            transform: scale(0.5);
+            animation: fadeInScale 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67) forwards;
+        }
+        #letter-l {
+            opacity: 0;
+            color: var(--primary);
+            transform: translateX(-40px);
+            animation: slideInL 0.6s cubic-bezier(0.17, 0.67, 0.83, 0.67) 0.8s forwards;
+        }
+        .os-text {
+            margin-top: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            color: #444;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0;
+            animation: fadeInText 0.5s ease 1.6s forwards;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .os-text span {
+            color: var(--primary);
+        }
+        .progress-bar {
+            position: absolute;
+            bottom: -40px;
+            width: 150px;
+            height: 2px;
+            background: #111;
+            border-radius: 2px;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInText 0.5s ease 1.6s forwards;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            animation: progressLoad 2s ease 1.6s forwards;
+        }
+
+        @keyframes fadeInScale {
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInL {
+            to { opacity: 1; transform: translateX(5px); }
+        }
+        @keyframes fadeInText {
+            to { opacity: 1; }
+        }
+        @keyframes progressLoad {
+            to { width: 100%; }
+        }
+        
+        /* Glow effect */
+        .glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0, 255, 136, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            animation: pulse 2s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(0.8); opacity: 0.5; }
+            to { transform: scale(1.2); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+    <div class="glow"></div>
+    <div class="container">
+        <div class="logo-container">
+            <span id="letter-r">R</span>
+            <span id="letter-l">L</span>
+        </div>
+        <div class="os-text" id="os-display">Detecting system...</div>
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+    </div>
+
+    <script>
+        const osDisplay = document.getElementById('os-display');
+        const platform = navigator.platform.toLowerCase();
+        
+        setTimeout(() => {
+            if (platform.includes('mac')) {
+                osDisplay.innerHTML = 'INITIALIZING <span>MACOS</span> VERSION';
+            } else if (platform.includes('win')) {
+                osDisplay.innerHTML = 'INITIALIZING <span>WINDOWS</span> VERSION';
+            } else {
+                osDisplay.innerHTML = 'INITIALIZING <span>.RCL</span> ENGINE';
+            }
+        }, 100);
+    </script>
+</body>
+</html>

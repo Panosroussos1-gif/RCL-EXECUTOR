@@ -30,19 +30,41 @@ server.listen(5500, '127.0.0.1', () => {
 });
 
 function createWindow() {
+  const splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+  splash.loadFile('splash.html');
+
   win = new BrowserWindow({
     width: 800,
-    height: 500,
+    height: 600,
+    show: false, // Don't show the main window until splash is done
     frame: false,
-    resizable: false,
-    backgroundColor: '#0a0a0a',
+    transparent: true,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      devTools: true
     }
   });
 
   win.loadFile('app.html');
+
+  // After 4.5 seconds, hide splash and show main window
+  setTimeout(() => {
+    splash.close();
+    win.show();
+    win.focus();
+  }, 4500);
 }
 
 // Find the most recent Roblox log file

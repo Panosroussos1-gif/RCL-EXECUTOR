@@ -125,6 +125,19 @@ ipcMain.handle('execute-script', (event, content) => {
   return true;
 });
 
+ipcMain.handle('inject-internal', async () => {
+  return new Promise((resolve) => {
+    const loaderPath = path.join(__dirname, 'bin', 'rcl_loader');
+    exec(`"${loaderPath}"`, (err, stdout, stderr) => {
+      if (err) {
+        console.error('Internal Loader Error:', err);
+        return resolve({ success: false, error: err.message });
+      }
+      resolve({ success: true, output: stdout });
+    });
+  });
+});
+
 ipcMain.handle('inject-standalone', async () => {
   const oneLiner = 'local s,r=pcall(game.HttpGet,game,"http://127.0.0.1:5500/loader") if s then loadstring(r)() else warn("RCL ERR:"..tostring(r)) end';
   clipboard.writeText(oneLiner);

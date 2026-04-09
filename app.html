@@ -588,6 +588,9 @@ initialize()</textarea>
                 <button class="btn btn-inject" id="inject-btn">
                     <i class="fas fa-syringe"></i> INJECT
                 </button>
+                <button class="btn btn-inject" id="internal-btn" style="background: #00ccff;">
+                    <i class="fas fa-microchip"></i> INTERNAL
+                </button>
                 <button class="btn btn-primary" id="execute-btn" disabled>
                     <i class="fas fa-play"></i> EXECUTE
                 </button>
@@ -1020,6 +1023,19 @@ initialize()</textarea>
         };
 
         // Injection Logic
+        const internalBtn = document.getElementById('internal-btn');
+
+        internalBtn.onclick = async () => {
+            addLog('SYSTEM', 'Attempting internal injection...', '#00ccff');
+            const res = await ipcRenderer.invoke('inject-internal');
+            if (res.success) {
+                addLog('SUCCESS', 'Internal loader launched. Roblox starting...', '#00ff88');
+            } else {
+                addLog('ERROR', 'Internal injection failed. Make sure SIP is disabled.', '#ff4d4d');
+                alert('Internal Injection failed. \n\nThis requires: \n1. SIP to be DISABLED (csrutil disable)\n2. Roblox installed in /Applications');
+            }
+        };
+
         injectBtn.onclick = async () => {
             if (isInjected) {
                 addLog('SYSTEM', 'Already connected!', '#00ff88');

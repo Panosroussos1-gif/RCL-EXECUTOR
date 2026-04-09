@@ -258,9 +258,8 @@ ipcMain.handle('inject-internal', async () => {
       path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'rcl_loader'),
       path.join(app.getAppPath(), 'bin', 'rcl_loader'),
       path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
-      // Add a direct path to Applications for built app
-      '/Applications/RCL Executor 20.app/Contents/Resources/app.asar.unpacked/bin/rcl_loader',
-      '/Applications/RCL Executor 19.app/Contents/Resources/app.asar.unpacked/bin/rcl_loader'
+      // Ultimate Dynamic Path: Find loader relative to the current running executable
+      path.join(path.dirname(app.getPath('exe')), '..', 'Resources', 'app.asar.unpacked', 'bin', 'rcl_loader')
     ];
 
     let loaderPath = "";

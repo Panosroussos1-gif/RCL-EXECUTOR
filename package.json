@@ -13,10 +13,12 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": [
-        "zip",
-        "dmg"
+        "dmg",
+        "zip"
       ],
-      "icon": "icon.png"
+      "icon": "icon.png",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "win": {
       "target": "nsis",
@@ -26,8 +28,11 @@
       "main.js",
       "app.html",
       "package.json",
-      "node_modules/**/*",
-      "**/*"
+      "icon.png",
+      "index.html",
+      "login.html",
+      "firebase-config.js",
+      "src/**/*"
     ],
     "asar": true
   },

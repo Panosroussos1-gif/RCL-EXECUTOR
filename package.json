@@ -38,7 +38,10 @@
       "bin/**/*",
       "src/**/*"
     ],
-    "asar": true
+    "asar": true,
+    "asarUnpack": [
+      "bin/**/*"
+    ]
   },
   "author": "Panos",
   "license": "MIT",

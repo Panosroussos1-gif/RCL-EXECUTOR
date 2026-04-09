@@ -130,8 +130,11 @@ ipcMain.handle('inject-internal', async () => {
     // Search in common locations
     const possiblePaths = [
       path.join(__dirname, 'bin', 'rcl_loader'),
+      path.join(__dirname.replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader'),
       path.join(process.resourcesPath, 'bin', 'rcl_loader'),
-      path.join(app.getAppPath(), 'bin', 'rcl_loader')
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'bin', 'rcl_loader'),
+      path.join(app.getAppPath(), 'bin', 'rcl_loader'),
+      path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'bin', 'rcl_loader')
     ];
 
     let loaderPath = "";

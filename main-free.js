@@ -23,11 +23,20 @@ const server = http.createServer((req, res) => {
   if (req.url === '/get-script') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end(executionBuffer); 
-    executionBuffer = ""; 
+    executionBuffer = ""; // Clear after serving
   } else if (req.url === '/heartbeat') {
     lastHeartbeat = Date.now();
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('OK');
+  } else if (req.url === '/loader') {
+    try {
+      const loader = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(loader);
+    } catch (err) {
+      res.writeHead(500);
+      res.end('Error reading loader');
+    }
   } else {
     res.writeHead(404);
     res.end();
@@ -114,8 +123,8 @@ ipcMain.handle('execute-script', (event, content) => {
 });
 
 ipcMain.handle('inject-standalone', async () => {
-  const loaderScript = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
-  clipboard.writeText(loaderScript);
+  const oneLiner = 'loadstring(game:HttpGet("http://127.0.0.1:5500/loader"))()';
+  clipboard.writeText(oneLiner);
 
   const appleScript = `
     set robloxNames to {"Roblox", "RobloxPlayer", "RobloxPlayerBeta"}
@@ -131,17 +140,18 @@ ipcMain.handle('inject-standalone', async () => {
       
       if foundProcess is not "" then
         set frontmost of process foundProcess to true
-        delay 0.5
+        delay 1
+        -- Open Chat
         keystroke "/"
         delay 0.5
-        command down
-        keystroke "v"
-        key up command
+        -- Paste Loader
+        keystroke "v" using {command down}
         delay 0.5
+        -- Execute
         key code 36
         return "SUCCESS:" & foundProcess
       else
-        return "ERROR:Roblox not found"
+        return "ERROR:Roblox process not found"
       end if
     end tell
   `;

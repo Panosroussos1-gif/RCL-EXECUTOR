@@ -1019,23 +1019,27 @@ initialize()</textarea>
             lineNumbers.scrollTop = editor.scrollTop;
         };
 
-        // Simulated Injection
-        injectBtn.onclick = () => {
-            if (isInjected) return;
+        // Injection Logic
+        injectBtn.onclick = async () => {
+            if (isInjected) {
+                addLog('SYSTEM', 'Already connected!', '#00ff88');
+                return;
+            }
+
+            addLog('SYSTEM', 'Attempting standalone injection...', '#ffcc00');
             injectBtn.disabled = true;
-            addLog('SYSTEM', 'Attaching to process...', '#ffaa00');
+            injectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> INJECTING...';
+
+            const res = await ipcRenderer.invoke('inject-standalone');
             
-            setTimeout(() => {
-                addLog('SUCCESS', 'Successfully attached to Roblox.', '#00ff88');
-                isInjected = true;
-                injectionStatus.classList.add('active');
-                injectionStatus.innerHTML = '<i class="fas fa-circle"></i> INJECTED';
-                executeBtn.disabled = false;
-                injectBtn.innerHTML = '<i class="fas fa-check"></i> INJECTED';
-                injectBtn.style.background = '#1a1a1a';
-                injectBtn.style.color = '#444';
-                robloxStatus.classList.add('active');
-            }, 1500);
+            if (res.success) {
+                addLog('SUCCESS', 'Injection script sent to Roblox!', '#00ff88');
+                addLog('SYSTEM', 'Waiting for heartbeat...', '#00ccff');
+            } else {
+                addLog('ERROR', 'Roblox not found! Make sure the game is open.', '#ff4d4d');
+                injectBtn.disabled = false;
+                injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+            }
         };
 
         document.getElementById('clear-btn').onclick = () => {

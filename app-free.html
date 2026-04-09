@@ -162,6 +162,9 @@
     </div>
 
     <div class="actionbar">
+        <button class="btn btn-exec" id="inject-btn">
+            <i class="fas fa-syringe"></i> INJECT
+        </button>
         <button class="btn btn-exec" id="exec-btn">
             <i class="fas fa-play"></i> EXECUTE
         </button>
@@ -190,9 +193,24 @@
 
         const editor = document.getElementById('editor');
         const execBtn = document.getElementById('exec-btn');
+        const injectBtn = document.getElementById('inject-btn');
         const rbxStatus = document.getElementById('rbx-status');
         const readyStatus = document.getElementById('ready-status');
         const consoleOutput = document.getElementById('console-output');
+
+        let isInjected = false;
+
+        injectBtn.onclick = async () => {
+            if (isInjected) return;
+            injectBtn.disabled = true;
+            injectBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...';
+            const res = await ipcRenderer.invoke('inject-standalone');
+            if (!res.success) {
+                alert('Roblox not found!');
+                injectBtn.disabled = false;
+                injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+            }
+        };
 
         ipcRenderer.on('roblox-log', (event, line) => {
             if (consoleOutput.innerHTML.includes('Waiting for Roblox logs...')) consoleOutput.innerHTML = '';
@@ -243,9 +261,15 @@
             if (isLoaderActive) {
                 readyStatus.classList.add('active');
                 readyStatus.innerHTML = '<i class="fas fa-circle"></i> CONNECTED';
+                isInjected = true;
+                injectBtn.innerHTML = '<i class="fas fa-check"></i> OK';
+                injectBtn.disabled = true;
             } else {
                 readyStatus.classList.remove('active');
                 readyStatus.innerHTML = '<i class="fas fa-circle"></i> DISCONNECTED';
+                isInjected = false;
+                injectBtn.innerHTML = '<i class="fas fa-syringe"></i> INJECT';
+                injectBtn.disabled = false;
             }
         }, 2000);
     </script>

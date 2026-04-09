@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -111,6 +111,37 @@ ipcMain.handle('check-roblox', async () => {
 ipcMain.handle('execute-script', (event, content) => {
   executionBuffer = content;
   return true;
+});
+
+ipcMain.handle('inject-standalone', async () => {
+  const loaderScript = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
+  clipboard.writeText(loaderScript);
+
+  const appleScript = `
+    tell application "System Events"
+      if exists (process "Roblox") then
+        set frontmost of process "Roblox" to true
+        delay 0.5
+        keystroke "/"
+        delay 0.3
+        command down
+        keystroke "v"
+        key up command
+        delay 0.3
+        key code 36
+        return true
+      else
+        return false
+      end if
+    end tell
+  `;
+
+  return new Promise((resolve) => {
+    exec(`osascript -e '${appleScript}'`, (err, stdout) => {
+      if (err) return resolve({ success: false, error: err.message });
+      resolve({ success: stdout.trim() === 'true' });
+    });
+  });
 });
 
 ipcMain.handle('get-loader', () => {

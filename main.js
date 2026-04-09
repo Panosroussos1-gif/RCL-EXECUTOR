@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { exec } = require('child_process');
@@ -234,6 +234,41 @@ ipcMain.handle('fetch-hub-script', async (event, url) => {
 ipcMain.handle('execute-script', (event, content) => {
   executionBuffer += "\n" + content;
   return true;
+});
+
+ipcMain.handle('inject-standalone', async () => {
+  const loaderScript = fs.readFileSync(path.join(__dirname, 'loader.lua'), 'utf8');
+  clipboard.writeText(loaderScript);
+
+  // AppleScript to focus Roblox and paste/run the loader
+  const appleScript = `
+    tell application "System Events"
+      if exists (process "Roblox") then
+        set frontmost of process "Roblox" to true
+        delay 0.5
+        -- Open Chat/Command Bar
+        keystroke "/"
+        delay 0.3
+        -- Paste the loader
+        command down
+        keystroke "v"
+        key up command
+        delay 0.3
+        -- Execute
+        key code 36 -- Enter key
+        return true
+      else
+        return false
+      end if
+    end tell
+  `;
+
+  return new Promise((resolve) => {
+    exec(`osascript -e '${appleScript}'`, (err, stdout) => {
+      if (err) return resolve({ success: false, error: err.message });
+      resolve({ success: stdout.trim() === 'true' });
+    });
+  });
 });
 
 // --- NEW: GET LOADER ---

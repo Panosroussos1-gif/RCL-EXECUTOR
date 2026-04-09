@@ -31,8 +31,13 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build and Package
+      - name: Build Pro Version
         run: npm run build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Free Version
+        run: npm run build:free
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "start:free": "electron main-free.js",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "build:free": "electron-builder -c.main=main-free.js -c.productName=\"RCL Free\" -c.appId=\"com.rcl.executor.free\""
   },
   "build": {
     "appId": "com.rcl.executor",
@@ -28,7 +29,9 @@
     },
     "files": [
       "main.js",
+      "main-free.js",
       "app.html",
+      "app-free.html",
       "package.json",
       "icon.png",
       "index.html",

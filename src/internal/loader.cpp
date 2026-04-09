@@ -60,34 +60,53 @@ int main(int argc, char *argv[]) {
     
     std::cout << "------------------------------------------" << std::endl;
     std::cout << "[LOADER] MacSploit-Style Injection" << std::endl;
+    std::cout << "[LOADER] Base Dir: " << base_dir << std::endl;
     std::cout << "------------------------------------------" << std::endl;
     
     mkdir(temp_dir.c_str(), 0777);
     
     if (access(safe_app.c_str(), F_OK) == -1) {
-        std::cout << "[STEP 1] Mirroring Roblox..." << std::endl;
-        system(("cp -R \"" + std::string(original_app) + "\" \"" + safe_app + "\"").c_str());
+        std::cout << "[STEP 1] Mirroring Roblox (This may take a moment)..." << std::endl;
+        std::string copy_cmd = "cp -R \"" + std::string(original_app) + "\" \"" + safe_app + "\"";
+        int res = system(copy_cmd.c_str());
+        if (res != 0) {
+            std::cerr << "[ERROR] Failed to mirror Roblox app." << std::endl;
+            return 1;
+        }
+    } else {
+        std::cout << "[STEP 1] Safe app bundle already exists." << std::endl;
     }
     
-    std::cout << "[STEP 2] Patching binary..." << std::endl;
+    std::cout << "[STEP 2] Patching binary with insert_dylib..." << std::endl;
     system(("codesign --remove-signature \"" + safe_binary + "\" 2>/dev/null").c_str());
     
+    // Check if dylib exists
+    if (access(dylib_path.c_str(), F_OK) == -1) {
+        std::cerr << "[ERROR] Internal Engine (dylib) not found at: " << dylib_path << std::endl;
+        return 1;
+    }
+
     std::string patch_cmd = "\"" + insert_dylib_tool + "\" --inplace --all-yes \"" + dylib_path + "\" \"" + safe_binary + "\" 2>&1";
-    system(patch_cmd.c_str());
+    int patch_res = system(patch_cmd.c_str());
+    if (patch_res != 0) {
+        std::cerr << "[ERROR] Binary patching failed." << std::endl;
+        // Don't return, try to launch anyway if binary exists
+    }
     
     std::cout << "[STEP 3] Launching patched Roblox..." << std::endl;
     pid_t pid;
     char* safe_binary_cstr = (char*)safe_binary.c_str();
     char* const args[] = {safe_binary_cstr, nullptr};
     
+    // Use posix_spawn with env to ensure path resolution
     int status = posix_spawn(&pid, safe_binary.c_str(), nullptr, nullptr, args, environ);
     
     if (status == 0) {
-        std::cout << "[SUCCESS] Internal Injection Active!" << std::endl;
-        // Don't wait for Roblox to close, just exit so the app knows we're done
+        std::cout << "[SUCCESS] Internal Injection Active! (PID: " << pid << ")" << std::endl;
+        std::cout << "[SUCCESS] Enjoy scripting!" << std::endl;
         return 0;
     } else {
-        std::cerr << "[ERROR] Failed to launch Roblox." << std::endl;
+        std::cerr << "[ERROR] Failed to launch Roblox. Code: " << status << std::endl;
         return 1;
     }
 }

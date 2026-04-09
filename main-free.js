@@ -75,9 +75,28 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 function createWindow() {
+  const splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      devTools: true
+    }
+  });
+
+  splash.loadFile(path.join(__dirname, 'splash.html')).catch(err => {
+    console.error('Failed to load splash.html:', err);
+  });
+
   win = new BrowserWindow({
     width: 500,
     height: 350,
+    show: false,
     frame: false,
     transparent: true,
     resizable: false,
@@ -88,6 +107,13 @@ function createWindow() {
   });
 
   win.loadFile(path.join(__dirname, 'app-free.html'));
+
+  // After 4.5 seconds, hide splash and show main window
+  setTimeout(() => {
+    splash.close();
+    win.show();
+    win.focus();
+  }, 4500);
 }
 
 app.whenReady().then(() => {

@@ -30,6 +30,8 @@
       "main-free.js",
       "app.html",
       "app-free.html",
+      "splash.html",
+      "loader.lua",
       "package.json",
       "icon.png",
       "index.html",

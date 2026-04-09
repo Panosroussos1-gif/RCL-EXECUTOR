@@ -86,11 +86,14 @@ function createWindow() {
     resizable: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      devTools: true
     }
   });
 
-  splash.loadFile(path.join(__dirname, 'splash.html'));
+  splash.loadFile(path.join(__dirname, 'splash.html')).catch(err => {
+    console.error('Failed to load splash.html:', err);
+  });
 
   win = new BrowserWindow({
     width: 800,

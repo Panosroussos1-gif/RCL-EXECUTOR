@@ -19,8 +19,26 @@ const server = http.createServer((req, res) => {
   }
 });
 
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.error('Script server port 5500 is already in use. Another instance might be running.');
+    // Don't crash, just log. The other instance might handle it.
+  } else {
+    console.error('Script server error:', e);
+  }
+});
+
 server.listen(5500, '127.0.0.1', () => {
   console.log('Free Script server running at http://127.0.0.1:5500/');
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // Optional: show a dialog
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
 function createWindow() {

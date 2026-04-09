@@ -139,7 +139,7 @@ ipcMain.handle('inject-internal', async () => {
     exec(`"${loaderPath}"`, (err, stdout, stderr) => {
       if (err) {
         console.error('Internal Loader Error:', err);
-        return resolve({ success: false, error: err.message });
+        return resolve({ success: false, error: stderr || err.message });
       }
       console.log('Internal Loader Output:', stdout);
       resolve({ success: true, output: stdout });

@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (pid == 0) {
-        std::cerr << "[ERROR] Roblox is not running! Please open Roblox first." << std::endl;
+        std::cerr << "ERROR: Roblox is not running! Open the game first." << std::endl;
         return 1;
     }
 

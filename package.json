@@ -15,9 +15,10 @@
       "target": [
         "dmg"
       ],
-      "icon": "icon.png",
       "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "gatekeeperAssess": false,
+      "entitlements": null,
+      "entitlementsInherit": null
     },
     "win": {
       "target": "nsis",
